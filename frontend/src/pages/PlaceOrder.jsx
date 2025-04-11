@@ -1,0 +1,255 @@
+import React, { useContext, useState } from "react";
+import Title from "../components/Title";
+import CartTotal from "../components/CartTotal";
+import { ShopContext } from "../context/ShopContext";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+// Dummy fallback data for fields other than the name.
+const dummyData = {
+  email: "john.doe@example.com",
+  street: "123 Dummy Street",
+  city: "Dummy City",
+  state: "Dummy State",
+  zipcode: "00000",
+  country: "Dummy Country",
+  phone: "1234567890",
+};
+
+const PlaceOrder = () => {
+  const currency = "₹";
+  const {
+    navigate,
+    backendUrl,
+    cartItems,
+    setCartItems,
+    getCartAmount,
+    delivery_fee,
+    products,
+  } = useContext(ShopContext);
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    street: "",
+    city: "",
+    state: "",
+    zipcode: "",
+    country: "",
+    phone: "",
+  });
+
+  const onChangeHandler = (event) => {
+    const { name, value } = event.target;
+    setFormData((data) => ({ ...data, [name]: value }));
+  };
+
+  const onSubmitHandler = async (event) => {
+    event.preventDefault();
+    const finalFormData = { ...formData };
+
+    // Generate a random name if both first and last names are empty.
+    if (!formData.firstName.trim() && !formData.lastName.trim()) {
+      const randomString = Math.random().toString(36).substring(2, 8);
+      const now = new Date();
+      const hh = now.getHours().toString().padStart(2, "0");
+      const mm = now.getMinutes().toString().padStart(2, "0");
+      const ss = now.getSeconds().toString().padStart(2, "0");
+      finalFormData.firstName = `${randomString}_${hh}-${mm}-${ss}`;
+      finalFormData.lastName = "";
+    }
+    
+    // Use dummy fallback data for any empty fields.
+    Object.keys(dummyData).forEach((key) => {
+      if (!finalFormData[key] || !finalFormData[key].trim()) {
+        finalFormData[key] = dummyData[key];
+      }
+    });
+
+    try {
+      let orderItems = [];
+      for (const productId in cartItems) {
+        for (const variantKey in cartItems[productId]) {
+          const quantity = cartItems[productId][variantKey];
+          if (quantity > 0) {
+            const product = products.find((p) => p._id === productId);
+            const variant = product?.variants?.find(
+              (v) => v._id.toString() === variantKey
+            );
+            if (!product || !variant) continue;
+            const size = variant.size ? variant.size.toUpperCase() : "";
+            orderItems.push({
+              _id: productId,
+              productName: product.name,
+              subCategory: product.subCategory,
+              color: variant.color || "",
+              size,
+              age: variant.age || "",
+              ageUnit: variant.ageUnit || "",
+              quantity,
+              variantId: variantKey,
+            });
+          }
+        }
+      }
+
+      const cartSubtotal = getCartAmount();
+      const totalAmount = cartSubtotal + delivery_fee;
+
+      const orderData = {
+        // Set userId as 'guest' since no sign-in is required.
+        userId: "guest",
+        address: finalFormData,
+        items: orderItems,
+        amount: totalAmount,
+        paymentMethod: "cod",
+      };
+
+      const response = await axios.post(
+        backendUrl + "/api/order/place",
+        orderData
+      );
+
+      if (response.data.success) {
+        setCartItems({});
+        navigate("/orders");
+        toast.success(response.data.message);
+
+        // Copy order details to clipboard and open WhatsApp (unchanged logic)
+        if (navigator.clipboard) {
+          const displayName =
+            finalFormData.firstName && finalFormData.lastName
+              ? `${finalFormData.firstName} ${finalFormData.lastName}`
+              : finalFormData.firstName;
+          const customerInfo = `Customer: ${displayName}\nEmail: ${finalFormData.email}\nAddress: ${finalFormData.street}, ${finalFormData.city}, ${finalFormData.state}, ${finalFormData.zipcode}, ${finalFormData.country}\nPhone: ${finalFormData.phone}`;
+          const itemsMessage = orderItems
+            .map((item) => {
+              let variantInfo = [];
+              if (item.size) variantInfo.push(`Size: ${item.size}`);
+              if (item.age) variantInfo.push(`Age: ${item.age} ${item.ageUnit}`);
+              if (item.color) variantInfo.push(`Color: ${item.color}`);
+              return `${item.productName} (${item.subCategory}) x ${item.quantity} (${variantInfo.join(", ")})`;
+            })
+            .join("\n");
+          const message = `🛍️ *New Order Received!*\n\n${customerInfo}\n\n📦 *Order Items:*\n${itemsMessage}\n\n💰 Total: ${currency}${orderData.amount}\n🧾 Payment Method: COD`;
+          navigator.clipboard.writeText(message).then(() => {
+            toast.info("Order details copied to clipboard!");
+          });
+  
+          const whatsappNumber = "+923106830936";
+          const encodedMessage = encodeURIComponent(message);
+          const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+          window.open(whatsappUrl, "_blank");
+        }
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Something went wrong. Please try again later.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-10 px-4">
+      <form
+        onSubmit={onSubmitHandler}
+        className="bg-white shadow-2xl rounded-lg p-8 w-full max-w-4xl border"
+      >
+        <div className="mb-8">
+          <Title text1="DELIVERY" text2="INFORMATION" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input
+            onChange={onChangeHandler}
+            name="firstName"
+            value={formData.firstName}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="text"
+            placeholder="First Name"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="lastName"
+            value={formData.lastName}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="text"
+            placeholder="Last Name"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="email"
+            value={formData.email}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="email"
+            placeholder="Email Address"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="street"
+            value={formData.street}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="text"
+            placeholder="Street Address"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="city"
+            value={formData.city}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="text"
+            placeholder="City"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="state"
+            value={formData.state}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="text"
+            placeholder="State"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="zipcode"
+            value={formData.zipcode}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="number"
+            placeholder="Zipcode"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="country"
+            value={formData.country}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="text"
+            placeholder="Country"
+          />
+          <input
+            onChange={onChangeHandler}
+            name="phone"
+            value={formData.phone}
+            className="border border-gray-300 py-3 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
+            type="number"
+            placeholder="Phone Number"
+          />
+        </div>
+        <div className="mt-10 flex flex-col md:flex-row justify-between items-center">
+          <div className="w-full md:w-1/2">
+            <CartTotal />
+          </div>
+          <div className="mt-8 md:mt-0">
+            <button
+              type="submit"
+              className="bg-black text-white px-12 py-3 rounded-full text-lg font-medium transition duration-300 hover:bg-gray-800"
+            >
+              Contact Seller
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export default PlaceOrder;
