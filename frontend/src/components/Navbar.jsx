@@ -35,7 +35,7 @@ const Navbar = () => {
               >
                 {({ isActive }) => (
                   <>
-                    <p>{path === "/" ? "ghar" : path.replace("/", "").toUpperCase()}</p>
+                    <p>{path === "/" ? "office" : path.replace("/", "").toUpperCase()}</p>
                     <hr
                       className={`w-8 h-[2px] transition-all duration-200 ${
                         isActive ? "bg-black" : "bg-transparent"
