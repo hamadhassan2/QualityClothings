@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Prata&display=swap');
+.active{
+  background-color: #5c6cf2;
+  border-color: #c586A5;
+  color: white;
+}
+*{
+  font-family: 'Outfit', sans-serif;
+}
+select,input,textarea{
+  border: 1px solid #c2c2c2;
+  outline-color: #c586A5;
+  border-radius: 4px;
+}
