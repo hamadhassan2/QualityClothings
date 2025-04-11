@@ -25,7 +25,8 @@ const Add = ({ token }) => {
   const [subCategory, setSubCategory] = useState("");
   const [subCategorySuggestions, setSubCategorySuggestions] = useState([]);
   const [filteredSubCategories, setFilteredSubCategories] = useState([]);
-  const [showSubCategorySuggestions, setShowSubCategorySuggestions] = useState(false);
+  const [showSubCategorySuggestions, setShowSubCategorySuggestions] =
+    useState(false);
   const [count, setCount] = useState("");
 
   // Other product fields
@@ -47,7 +48,9 @@ const Add = ({ token }) => {
   useEffect(() => {
     async function fetchSubCategories() {
       try {
-        const response = await axios.get(`${backendUrl}/api/product/subcategories`);
+        const response = await axios.get(
+          `${backendUrl}/api/product/subcategories`
+        );
         if (response.data.success) {
           setSubCategorySuggestions(response.data.subCategories);
         } else {
@@ -127,7 +130,11 @@ const Add = ({ token }) => {
       toast.error("Please enter at least a size or an age for the variant.");
       return;
     }
-    if (!variantQuantity.trim() || isNaN(variantQuantity) || !variantColor.trim()) {
+    if (
+      !variantQuantity.trim() ||
+      isNaN(variantQuantity) ||
+      !variantColor.trim()
+    ) {
       toast.error("Please enter a valid quantity and color for the variant.");
       return;
     }
@@ -136,10 +143,17 @@ const Add = ({ token }) => {
       age: variantAge.trim() || null,
       ageUnit: variantAge.trim() ? variantAgeUnit : null,
       quantity: Number(variantQuantity),
-      color: variantColor.trim()
+      color: variantColor.trim(),
     };
     // Check for duplicates.
-    if (variants.find(v => v.size === newVariant.size && v.age === newVariant.age && v.color.toLowerCase() === newVariant.color.toLowerCase())) {
+    if (
+      variants.find(
+        (v) =>
+          v.size === newVariant.size &&
+          v.age === newVariant.age &&
+          v.color.toLowerCase() === newVariant.color.toLowerCase()
+      )
+    ) {
       toast.error("This variant already exists.");
       return;
     }
@@ -154,7 +168,16 @@ const Add = ({ token }) => {
 
   // Handlers for removing variants.
   const removeVariant = (variantToRemove) => {
-    setVariants(prev => prev.filter(v => !(v.size === variantToRemove.size && v.age === variantToRemove.age && v.color.toLowerCase() === variantToRemove.color.toLowerCase())));
+    setVariants((prev) =>
+      prev.filter(
+        (v) =>
+          !(
+            v.size === variantToRemove.size &&
+            v.age === variantToRemove.age &&
+            v.color.toLowerCase() === variantToRemove.color.toLowerCase()
+          )
+      )
+    );
   };
 
   const onSubmitHandler = async (e) => {
@@ -162,7 +185,9 @@ const Add = ({ token }) => {
 
     // Validate required fields and ensure at least one variant exists.
     if (!name.trim() || !price || variants.length === 0) {
-      toast.error("Please fill in all required fields. At least one variant must be provided.");
+      toast.error(
+        "Please fill in all required fields. At least one variant must be provided."
+      );
       return;
     }
 
@@ -350,9 +375,7 @@ const Add = ({ token }) => {
             />
           </div>
           <div>
-            <label className="block text-xl font-medium mb-2">
-              Combo
-            </label>
+            <label className="block text-xl font-medium mb-2">Combo</label>
             <input
               type="number"
               placeholder="Enter combo factor (optional)"
@@ -376,8 +399,9 @@ const Add = ({ token }) => {
             >
               <option value="Men">Men</option>
               <option value="Women">Women</option>
-              <option value="Boy">Boy</option>
-              <option value="Kids">Kids</option>
+              <option value="Boys">Boys</option>
+              <option value="Girls">Girls</option>
+              <option value="Unisex">Unisex</option>
             </select>
           </div>
           <div className="relative">
@@ -392,7 +416,9 @@ const Add = ({ token }) => {
                 setShowSubCategorySuggestions(true);
                 setFilteredSubCategories(subCategorySuggestions);
               }}
-              onBlur={() => setTimeout(() => setShowSubCategorySuggestions(false), 150)}
+              onBlur={() =>
+                setTimeout(() => setShowSubCategorySuggestions(false), 150)
+              }
               value={subCategory}
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
@@ -418,11 +444,14 @@ const Add = ({ token }) => {
         <div className="border p-4 rounded-lg shadow-sm space-y-4">
           <h2 className="text-xl font-semibold">Add Variant</h2>
           <p className="text-sm text-gray-600">
-            Enter at least a size or an age. If both are provided, they will be stored in a single variant entry.
+            Enter at least a size or an age. If both are provided, they will be
+            stored in a single variant entry.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-lg font-medium mb-1">Size (optional)</label>
+              <label className="block text-lg font-medium mb-1">
+                Size (optional)
+              </label>
               <input
                 type="text"
                 placeholder="e.g., X, M, L"
@@ -432,7 +461,9 @@ const Add = ({ token }) => {
               />
             </div>
             <div>
-              <label className="block text-lg font-medium mb-1">Age (optional)</label>
+              <label className="block text-lg font-medium mb-1">
+                Age (optional)
+              </label>
               <input
                 type="text"
                 placeholder="e.g., 3 or 3-4"
@@ -443,7 +474,9 @@ const Add = ({ token }) => {
             </div>
             {variantAge && (
               <div>
-                <label className="block text-lg font-medium mb-1">Age Unit</label>
+                <label className="block text-lg font-medium mb-1">
+                  Age Unit
+                </label>
                 <select
                   value={variantAgeUnit}
                   onChange={(e) => setVariantAgeUnit(e.target.value)}
@@ -496,7 +529,11 @@ const Add = ({ token }) => {
                       title="Click to remove"
                     >
                       {v.size && <span>{v.size}</span>}
-                      {v.age && <span>{v.age} {v.ageUnit}</span>}
+                      {v.age && (
+                        <span>
+                          {v.age} {v.ageUnit}
+                        </span>
+                      )}
                       <span>({v.quantity})</span>
                       <span>[{v.color}]</span>
                     </div>

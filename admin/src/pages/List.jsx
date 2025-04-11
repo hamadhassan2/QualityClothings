@@ -110,6 +110,9 @@ const List = ({ token }) => {
   const [showSubCategorySuggestions, setShowSubCategorySuggestions] = useState(false);
   const navigate = useNavigate();
 
+  // New state for enlarged image modal.
+  const [enlargedImage, setEnlargedImage] = useState(null);
+
   // Refs for filter dropdown containers.
   const availableFilterContainerRef = useRef(null);
   const outFilterContainerRef = useRef(null);
@@ -656,7 +659,8 @@ const List = ({ token }) => {
                 <img
                   src={Array.isArray(item.image) ? item.image[0] : item.image}
                   alt={item.name}
-                  className="w-10 h-10 object-cover rounded"
+                  className="w-10 h-10 object-cover rounded cursor-pointer"
+                  onClick={() => setEnlargedImage(Array.isArray(item.image) ? item.image[0] : item.image)}
                 />
                 <span className="text-gray-800 font-medium">{item.name.toUpperCase()}</span>
                 <span className="text-gray-700">{item.category.toUpperCase()}</span>
@@ -771,7 +775,8 @@ const List = ({ token }) => {
                   <img
                     src={Array.isArray(item.image) ? item.image[0] : item.image}
                     alt={item.name}
-                    className="w-10 h-10 object-cover rounded"
+                    className="w-10 h-10 object-cover rounded cursor-pointer"
+                    onClick={() => setEnlargedImage(Array.isArray(item.image) ? item.image[0] : item.image)}
                   />
                   <span className="text-gray-800 font-medium">{item.name.toUpperCase()}</span>
                   <span className="text-gray-700">{item.category.toUpperCase()}</span>
@@ -1133,6 +1138,16 @@ const List = ({ token }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Modal for Enlarged View */}
+      {enlargedImage && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <img src={enlargedImage} alt="Enlarged" className="max-h-full max-w-full" />
         </div>
       )}
     </section>
