@@ -139,39 +139,7 @@ const About = () => {
         ))}
       </motion.div>
 
-      {/* FAQ Section */}
-      <motion.div 
-        variants={sectionVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        className='text-xl py-10 text-center'
-      >
-        <Title text1={'FREQUENTLY ASKED'} text2={'QUESTIONS'} />
-      </motion.div>
-      <motion.div 
-        variants={sectionVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        className='max-w-2xl mx-auto'
-      >
-        {faqs.map((faq, index) => (
-          <motion.div 
-            key={index}
-            whileHover={{ backgroundColor: "#f9fafb" }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className='border-b py-4 cursor-pointer'
-            onClick={() => setFaqOpen(faqOpen === index ? null : index)}
-          >
-            <h4 className='text-gray-800 text-lg font-semibold flex justify-between'>
-              {faq.question}
-              <span>{faqOpen === index ? '-' : '+'}</span>
-            </h4>
-            {faqOpen === index && <p className='text-gray-600 mt-2'>{faq.answer}</p>}
-          </motion.div>
-        ))}
-      </motion.div>
+     
     </div>
   );
 };

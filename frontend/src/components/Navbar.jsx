@@ -7,7 +7,6 @@ import { FaShoppingCart, FaClipboardList } from 'react-icons/fa';
 const Navbar = () => {
   const [visible, setVisible] = useState(false);
   const { getCartCount, navigate } = useContext(ShopContext);
-
   const cartCount = getCartCount();
 
   // Menu items without contact page
@@ -15,46 +14,48 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/">
-          <img src='./updatedlogo.png' className="w-36" alt="Company Logo" />
-        </Link>
-
-        {/* Desktop Menu */}
-        <ul className="hidden sm:flex gap-8 text-sm">
-          {menuItems.map((path, idx) => (
-            <li key={idx}>
-              <NavLink
-                to={path}
-                className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 transition-all duration-200 hover:text-black ${
-                    isActive ? "text-black" : "text-gray-700"
-                  }`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <p>{path === "/" ? "HOME" : path.replace("/", "").toUpperCase()}</p>
-                    <hr
-                      className={`w-8 h-[2px] transition-all duration-200 ${
-                        isActive ? "bg-black" : "bg-transparent"
-                      }`}
-                    />
-                  </>
-                )}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-
-        {/* Action Icons */}
-        <div className="flex items-center gap-6">
-          {/* Orders Icon (replacing profile) */}
-          <Link to="/orders">
-            <FaClipboardList className="w-5 h-5 cursor-pointer hover:scale-110 transition-transform" />
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:pl-2 lg:pr-8 py-4 flex items-center">
+        {/* Left Column: Logo */}
+        <div className="flex-1">
+          <Link 
+            to="/" 
+            onClick={() => setVisible(false)} // Close sidebar when logo is clicked
+          >
+            <img src='/updatedlogo.png' className="w-36" alt="Company Logo" />
           </Link>
+        </div>
 
+        {/* Center Column: Desktop Menu */}
+        <div className="flex-1 hidden sm:flex justify-center">
+          <ul className="flex gap-12 text-sm">
+            {menuItems.map((path, idx) => (
+              <li key={idx}>
+                <NavLink
+                  to={path}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center gap-1 transition-all duration-200 hover:text-black ${
+                      isActive ? "text-black" : "text-gray-700"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <p>{path === "/" ? "HOME" : path.replace("/", "").toUpperCase()}</p>
+                      <hr
+                        className={`w-8 h-[2px] transition-all duration-200 ${
+                          isActive ? "bg-black" : "bg-transparent"
+                        }`}
+                      />
+                    </>
+                  )}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Right Column: Action Icons */}
+        <div className="flex-1 flex justify-end items-center gap-6">
           {/* Cart Icon */}
           <Link to="/cart" className="relative">
             <FaShoppingCart className="w-5 h-5 cursor-pointer hover:scale-110 transition-transform" />
@@ -77,7 +78,7 @@ const Navbar = () => {
 
       {/* Mobile Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full bg-white shadow-lg transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full bg-white/70 backdrop-blur-sm shadow-lg transform transition-transform duration-300 ${
           visible ? 'translate-x-0' : 'translate-x-full'
         } sm:hidden w-64 z-50`}
       >
@@ -94,7 +95,7 @@ const Navbar = () => {
             <NavLink
               key={idx}
               to={path}
-              onClick={() => setVisible(false)}
+              onClick={() => setVisible(false)} // Close sidebar when a menu link is clicked
               className="py-3 px-6 border-b transition-colors hover:bg-gray-100"
             >
               {path === "/" ? "HOME" : path.replace("/", "").toUpperCase()}

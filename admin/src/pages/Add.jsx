@@ -5,13 +5,11 @@ import { backendUrl } from "../App";
 import { toast } from "react-toastify";
 
 const Add = ({ token }) => {
-  // Image states
   const [image1, setImage1] = useState(null);
   const [image2, setImage2] = useState(null);
   const [image3, setImage3] = useState(null);
   const [image4, setImage4] = useState(null);
 
-  // Basic product fields
   const [name, setName] = useState("");
   const [brandSuggestions, setBrandSuggestions] = useState([]);
   const [filteredBrands, setFilteredBrands] = useState([]);
@@ -19,23 +17,18 @@ const Add = ({ token }) => {
 
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [combo, setCombo] = useState(""); // New combo field
+  const [combo, setCombo] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [category, setCategory] = useState("Men");
   const [subCategory, setSubCategory] = useState("");
   const [subCategorySuggestions, setSubCategorySuggestions] = useState([]);
   const [filteredSubCategories, setFilteredSubCategories] = useState([]);
-  const [showSubCategorySuggestions, setShowSubCategorySuggestions] =
-    useState(false);
+  const [showSubCategorySuggestions, setShowSubCategorySuggestions] = useState(false);
   const [count, setCount] = useState("");
 
-  // Other product fields
   const [bestseller, setBestseller] = useState(false);
 
-  // Unified variants array (each variant: { size, age, ageUnit, quantity, color })
   const [variants, setVariants] = useState([]);
-
-  // Unified variant input fields
   const [variantSize, setVariantSize] = useState("");
   const [variantAge, setVariantAge] = useState("");
   const [variantAgeUnit, setVariantAgeUnit] = useState("Years");
@@ -44,13 +37,10 @@ const Add = ({ token }) => {
 
   const [loading, setLoading] = useState(false);
 
-  // Fetch distinct subcategories from the backend.
   useEffect(() => {
     async function fetchSubCategories() {
       try {
-        const response = await axios.get(
-          `${backendUrl}/api/product/subcategories`
-        );
+        const response = await axios.get(`${backendUrl}/api/product/subcategories`);
         if (response.data.success) {
           setSubCategorySuggestions(response.data.subCategories);
         } else {
@@ -65,7 +55,6 @@ const Add = ({ token }) => {
     fetchSubCategories();
   }, []);
 
-  // Fetch distinct brand names from the backend.
   useEffect(() => {
     async function fetchBrandNames() {
       try {
@@ -84,7 +73,6 @@ const Add = ({ token }) => {
     fetchBrandNames();
   }, []);
 
-  // Handlers for live brand suggestions.
   const handleBrandChange = (e) => {
     const value = e.target.value;
     setName(value);
@@ -104,7 +92,6 @@ const Add = ({ token }) => {
     setShowBrandSuggestions(false);
   };
 
-  // Handler for subcategory suggestions.
   const handleSubCategoryChange = (e) => {
     const value = e.target.value;
     setSubCategory(value);
@@ -124,7 +111,6 @@ const Add = ({ token }) => {
     setShowSubCategorySuggestions(false);
   };
 
-  // Unified variant handler.
   const addVariant = () => {
     if (!variantSize.trim() && !variantAge.trim()) {
       toast.error("Please enter at least a size or an age for the variant.");
@@ -145,7 +131,6 @@ const Add = ({ token }) => {
       quantity: Number(variantQuantity),
       color: variantColor.trim(),
     };
-    // Check for duplicates.
     if (
       variants.find(
         (v) =>
@@ -158,7 +143,6 @@ const Add = ({ token }) => {
       return;
     }
     setVariants([...variants, newVariant]);
-    // Clear variant inputs.
     setVariantSize("");
     setVariantAge("");
     setVariantAgeUnit("Years");
@@ -166,7 +150,6 @@ const Add = ({ token }) => {
     setVariantColor("");
   };
 
-  // Handlers for removing variants.
   const removeVariant = (variantToRemove) => {
     setVariants((prev) =>
       prev.filter(
@@ -182,17 +165,14 @@ const Add = ({ token }) => {
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
-  
     if (!name.trim() || !price || variants.length === 0) {
       toast.error("Please fill in all required fields. At least one variant must be provided.");
       return;
     }
-  
     if (discountPrice && Number(discountPrice) >= Number(price)) {
       toast.error("Discounted price must be less than the product price.");
       return;
     }
-  
     let finalPrice = Number(price);
     let finalDiscountPrice = discountPrice ? Number(discountPrice) : "";
     if (combo) {
@@ -201,7 +181,6 @@ const Add = ({ token }) => {
         finalDiscountPrice *= Number(combo);
       }
     }
-  
     setLoading(true);
     try {
       const formData = new FormData();
@@ -222,16 +201,14 @@ const Add = ({ token }) => {
       if (image2) formData.append("image2", image2);
       if (image3) formData.append("image3", image3);
       if (image4) formData.append("image4", image4);
-  
       const response = await axios.post(
         `${backendUrl}/api/product/add`,
         formData,
         {
           headers: { token },
-          timeout: 60000 // ✅ 60 seconds timeout
+          timeout: 60000
         }
       );
-  
       if (response.data.success) {
         toast.success(response.data.message);
         setName("");
@@ -254,7 +231,6 @@ const Add = ({ token }) => {
       } else {
         toast.error(response.data.message);
       }
-  
     } catch (error) {
       if (error.code === 'ECONNABORTED') {
         console.error("Timeout error:", error.message);
@@ -270,10 +246,8 @@ const Add = ({ token }) => {
         toast.error("Network error. Please try again.");
       }
     }
-  
     setLoading(false);
   };
-  
 
   return (
     <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-4 md:p-8 animate-fadeIn">
@@ -282,9 +256,7 @@ const Add = ({ token }) => {
           Add New Product
         </h1>
       </div>
-
       <form onSubmit={onSubmitHandler} className="space-y-8">
-        {/* Upload Images */}
         <div>
           <p className="text-xl font-semibold mb-3">Upload Images</p>
           <div className="flex flex-wrap gap-4">
@@ -314,8 +286,6 @@ const Add = ({ token }) => {
             ))}
           </div>
         </div>
-
-        {/* Brand Name with live suggestions */}
         <div className="relative">
           <label className="block text-xl font-medium mb-2">
             Brand Name <span className="text-red-500">*</span>
@@ -344,61 +314,7 @@ const Add = ({ token }) => {
             </div>
           )}
         </div>
-
-        {/* Product Description */}
-        <div>
-          <label className="block text-xl font-medium mb-2">
-            Product Description
-          </label>
-          <textarea
-            placeholder="Enter product description"
-            onChange={(e) => setDescription(e.target.value)}
-            value={description}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
-          />
-        </div>
-
-        {/* Price, Combo and Discount */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-xl font-medium mb-2">
-              Product Price <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              placeholder="e.g., 25"
-              onChange={(e) => setPrice(Number(e.target.value) || 0)}
-              value={price}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xl font-medium mb-2">
-              Discounted Price
-            </label>
-            <input
-              type="number"
-              placeholder="Optional"
-              onChange={(e) => setDiscountPrice(Number(e.target.value) || 0)}
-              value={discountPrice}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
-            />
-          </div>
-          <div>
-            <label className="block text-xl font-medium mb-2">Combo</label>
-            <input
-              type="number"
-              placeholder="Enter combo factor (optional)"
-              onChange={(e) => setCombo(Number(e.target.value) || "")}
-              value={combo}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
-            />
-          </div>
-        </div>
-
-        {/* Category & Sub Category */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
           <div>
             <label className="block text-xl font-medium mb-2">
               Product Category <span className="text-red-500">*</span>
@@ -448,15 +364,59 @@ const Add = ({ token }) => {
               </div>
             )}
           </div>
-          <div></div>
         </div>
-
-        {/* Unified Variant Input Section */}
+        <div>
+          <label className="block text-xl font-medium mb-2">
+            Product Description
+          </label>
+          <textarea
+            placeholder="Enter product description"
+            onChange={(e) => setDescription(e.target.value)}
+            value={description}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block text-xl font-medium mb-2">
+              Product Price <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              placeholder="e.g., 25"
+              onChange={(e) => setPrice(Number(e.target.value) || 0)}
+              value={price}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xl font-medium mb-2">
+              Discounted Price
+            </label>
+            <input
+              type="number"
+              placeholder="Optional"
+              onChange={(e) => setDiscountPrice(Number(e.target.value) || 0)}
+              value={discountPrice}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xl font-medium mb-2">Combo</label>
+            <input
+              type="number"
+              placeholder="Enter combo factor (optional)"
+              onChange={(e) => setCombo(Number(e.target.value) || "")}
+              value={combo}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black transition placeholder-gray-400"
+            />
+          </div>
+        </div>
         <div className="border p-4 rounded-lg shadow-sm space-y-4">
           <h2 className="text-xl font-semibold">Add Variant</h2>
           <p className="text-sm text-gray-600">
-            Enter at least a size or an age. If both are provided, they will be
-            stored in a single variant entry.
+            Enter at least a size or an age. If both are provided, they will be stored in a single variant entry.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -526,7 +486,6 @@ const Add = ({ token }) => {
           >
             Add Variant
           </button>
-          {/* Display added variants */}
           <div className="mt-4 space-y-2">
             {variants.length > 0 && (
               <div>
@@ -554,15 +513,11 @@ const Add = ({ token }) => {
             )}
           </div>
         </div>
-
-        {/* Validation: Require at least one variant */}
         {variants.length === 0 && (
           <p className="mt-2 text-sm text-red-500">
             Please add at least one variant.
           </p>
         )}
-
-        {/* Bestseller */}
         <div className="flex items-center gap-4">
           <input
             type="checkbox"
@@ -575,8 +530,6 @@ const Add = ({ token }) => {
             Add to Bestseller
           </label>
         </div>
-
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading}

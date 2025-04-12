@@ -34,7 +34,15 @@ const OurPolicy = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-800 mb-2">Best Customer Support</h3>
           <p className="text-gray-600 text-sm">
-            Our dedicated support team is available 24/7 to assist you. Whether you have a query or need help with your product, we're here to provide prompt and effective support.
+            Our dedicated support team is available 24/7 to assist you. Whether you have a query or need help with your product, contact us on{" "}
+            <a 
+              href="https://wa.me/919963472288" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-green-500 hover:underline"
+            >
+              Whatsapp
+            </a>.
           </p>
         </div>
       </div>

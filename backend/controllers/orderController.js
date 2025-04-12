@@ -1,6 +1,4 @@
 import orderModel from "../models/orderModel.js";
-// Removed userModel import since we no longer clear a user cart
-// import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
 
 const updateStatus = async (req, res) => {
@@ -70,12 +68,25 @@ const updateStatus = async (req, res) => {
   }
 };
 
+const updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId, payment } = req.body;
+    await orderModel.findByIdAndUpdate(orderId, { payment }, { new: true });
+    res.json({
+      success: true,
+      message: "Payment status updated successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 const placeOrder = async (req, res) => {
   try {
-    // For guest orders, ignore any provided userId.
     const { items, amount, address } = req.body;
     const orderData = {
-      userId: "guest", // Mark as guest order
+      userId: "guest",
       items,
       address,
       amount,
@@ -87,7 +98,6 @@ const placeOrder = async (req, res) => {
     const newOrder = new orderModel(orderData);
     await newOrder.save();
 
-    // No user cart clearing, as cart is maintained in client state.
     res.json({ success: true, message: "Order Placed" });
   } catch (error) {
     console.log(error);
@@ -118,20 +128,6 @@ const userOrders = async (req, res) => {
     const { userId } = req.body;
     const orders = await orderModel.find({ userId });
     res.json({ success: true, orders });
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-const updatePaymentStatus = async (req, res) => {
-  try {
-    const { orderId, payment } = req.body;
-    await orderModel.findByIdAndUpdate(orderId, { payment }, { new: true });
-    res.json({
-      success: true,
-      message: "Payment status updated successfully",
-    });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });

@@ -11,14 +11,12 @@ import PlaceOrder from "./pages/PlaceOrder";
 import Orders from "./pages/Orders";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import SearchBar from "./components/SearchBar";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import { MutatingDots } from "react-loader-spinner";
 
 // Export your backend URL so it can be used by other modules.
-export const backendUrl = "http://localhost:4000";
+export const backendUrl = "https://api.qualityclothings.com";
 const currency = "₹ ";
 export { currency };
 

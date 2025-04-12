@@ -1,9 +1,10 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import Title from "../components/Title";
 import CartTotal from "../components/CartTotal";
 import { ShopContext } from "../context/ShopContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { MutatingDots } from "react-loader-spinner";
 
 // Dummy fallback data for fields other than the name.
 const dummyData = {
@@ -25,7 +26,7 @@ const PlaceOrder = () => {
     setCartItems,
     getCartAmount,
     delivery_fee,
-    products,
+    products, // assuming each product has a property like `image`
   } = useContext(ShopContext);
 
   const [formData, setFormData] = useState({
@@ -40,6 +41,18 @@ const PlaceOrder = () => {
     phone: "",
   });
 
+  const [showAnimation, setShowAnimation] = useState(true);
+
+  useEffect(() => {
+    // Scroll to top when the component mounts
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Show loader animation for 1.5 seconds
+    const timer = setTimeout(() => {
+      setShowAnimation(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const onChangeHandler = (event) => {
     const { name, value } = event.target;
     setFormData((data) => ({ ...data, [name]: value }));
@@ -49,7 +62,7 @@ const PlaceOrder = () => {
     event.preventDefault();
     const finalFormData = { ...formData };
 
-    // Generate a random name if both first and last names are empty.
+    // If name is empty, generate a random fallback name.
     if (!formData.firstName.trim() && !formData.lastName.trim()) {
       const randomString = Math.random().toString(36).substring(2, 8);
       const now = new Date();
@@ -69,6 +82,7 @@ const PlaceOrder = () => {
 
     try {
       let orderItems = [];
+      // Build order items by iterating over each product variant in cartItems.
       for (const productId in cartItems) {
         for (const variantKey in cartItems[productId]) {
           const quantity = cartItems[productId][variantKey];
@@ -89,57 +103,78 @@ const PlaceOrder = () => {
               ageUnit: variant.ageUnit || "",
               quantity,
               variantId: variantKey,
+              // If product.image is an array, use only the first link.
+              productImage:
+                Array.isArray(product.image) && product.image.length > 0
+                  ? product.image[0]
+                  : product.image || "",
             });
           }
         }
+      }
+
+      // If no order items, don't place the order.
+      if (orderItems.length === 0) {
+        toast.error("No order items found. Please add items to your cart.");
+        return;
       }
 
       const cartSubtotal = getCartAmount();
       const totalAmount = cartSubtotal + delivery_fee;
 
       const orderData = {
-        // Set userId as 'guest' since no sign-in is required.
-        userId: "guest",
+        userId: "guest", // no sign-in required.
         address: finalFormData,
         items: orderItems,
         amount: totalAmount,
         paymentMethod: "cod",
       };
 
-      const response = await axios.post(
-        backendUrl + "/api/order/place",
-        orderData
-      );
+      const response = await axios.post(backendUrl + "/api/order/place", orderData);
 
       if (response.data.success) {
         setCartItems({});
         navigate("/orders");
         toast.success(response.data.message);
 
-        // Copy order details to clipboard and open WhatsApp (unchanged logic)
-        if (navigator.clipboard) {
-          const displayName =
-            finalFormData.firstName && finalFormData.lastName
-              ? `${finalFormData.firstName} ${finalFormData.lastName}`
-              : finalFormData.firstName;
-          const customerInfo = `Customer: ${displayName}\nEmail: ${finalFormData.email}\nAddress: ${finalFormData.street}, ${finalFormData.city}, ${finalFormData.state}, ${finalFormData.zipcode}, ${finalFormData.country}\nPhone: ${finalFormData.phone}`;
-          const itemsMessage = orderItems
-            .map((item) => {
-              let variantInfo = [];
-              if (item.size) variantInfo.push(`Size: ${item.size}`);
-              if (item.age) variantInfo.push(`Age: ${item.age} ${item.ageUnit}`);
-              if (item.color) variantInfo.push(`Color: ${item.color}`);
-              return `${item.productName} (${item.subCategory}) x ${item.quantity} (${variantInfo.join(", ")})`;
-            })
-            .join("\n");
-          const message = `🛍️ *New Order Received!*\n\n${customerInfo}\n\n📦 *Order Items:*\n${itemsMessage}\n\n💰 Total: ${currency}${orderData.amount}\n🧾 Payment Method: COD`;
-          navigator.clipboard.writeText(message).then(() => {
-            toast.info("Order details copied to clipboard!");
-          });
-  
-          const whatsappNumber = "+923106830936";
-          const encodedMessage = encodeURIComponent(message);
-          const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+        // Build WhatsApp message including order and customer details.
+        const displayName =
+          finalFormData.firstName && finalFormData.lastName
+            ? `${finalFormData.firstName} ${finalFormData.lastName}`
+            : finalFormData.firstName;
+        const customerInfo = `Customer: ${displayName}\nEmail: ${finalFormData.email}\nAddress: ${finalFormData.street}, ${finalFormData.city}, ${finalFormData.state}, ${finalFormData.zipcode}, ${finalFormData.country}\nPhone: ${finalFormData.phone}`;
+        const itemsMessage = orderItems
+          .map((item) => {
+            let variantInfo = [];
+            if (item.size) variantInfo.push(`Size: ${item.size}`);
+            if (item.age) variantInfo.push(`Age: ${item.age} ${item.ageUnit}`);
+            if (item.color) variantInfo.push(`Color: ${item.color}`);
+            if (item.productImage) {
+              // Clean the product image URL to remove a trailing closing parenthesis.
+              const cleanImageUrl = item.productImage.replace(/\)$/, "");
+              variantInfo.push(`Image: ${cleanImageUrl}`);
+            }
+            // Changed format: use hyphen instead of parentheses to separate variant details.
+            return `${item.productName} (${item.subCategory}) x ${item.quantity} - ${variantInfo.join(", ")}`;
+          })
+          .join("\n");
+        const message = `🛍️ *New Order Received!*\n\n${customerInfo}\n\n📦 *Order Items:*\n${itemsMessage}\n\n💰 Total: ${currency}${orderData.amount}\n🧾 Payment Method: COD`;
+
+        // Determine if user is on mobile.
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        const whatsappNumber = "+919963472288";
+        // Encode the message and remove any trailing encoded closing parenthesis if necessary.
+        let encodedMessage = encodeURIComponent(message).replace(/%29$/, "");
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+        
+        if (isMobile) {
+          window.location.href = whatsappUrl;
+        } else {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(message).then(() => {
+              toast.info("Order details copied to clipboard!");
+            });
+          }
           window.open(whatsappUrl, "_blank");
         }
       } else {
@@ -152,10 +187,23 @@ const PlaceOrder = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-10 px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-10 px-4 relative">
+      {showAnimation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
+          <MutatingDots
+            height="120"
+            width="120"
+            color="#32cd32"
+            secondaryColor="#2ecc71"
+            radius="12.5"
+            ariaLabel="mutating-dots-loading"
+            visible={true}
+          />
+        </div>
+      )}
       <form
         onSubmit={onSubmitHandler}
-        className="bg-white shadow-2xl rounded-lg p-8 w-full max-w-4xl border"
+        className="bg-white shadow-2xl rounded-lg p-8 w-full max-w-4xl border transition-opacity duration-700"
       >
         <div className="mb-8">
           <Title text1="DELIVERY" text2="INFORMATION" />
