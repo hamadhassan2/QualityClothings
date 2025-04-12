@@ -182,21 +182,17 @@ const Add = ({ token }) => {
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
-
-    // Validate required fields and ensure at least one variant exists.
+  
     if (!name.trim() || !price || variants.length === 0) {
-      toast.error(
-        "Please fill in all required fields. At least one variant must be provided."
-      );
+      toast.error("Please fill in all required fields. At least one variant must be provided.");
       return;
     }
-
+  
     if (discountPrice && Number(discountPrice) >= Number(price)) {
       toast.error("Discounted price must be less than the product price.");
       return;
     }
-
-    // Multiply price and discounted price by the combo value if provided.
+  
     let finalPrice = Number(price);
     let finalDiscountPrice = discountPrice ? Number(discountPrice) : "";
     if (combo) {
@@ -205,7 +201,7 @@ const Add = ({ token }) => {
         finalDiscountPrice *= Number(combo);
       }
     }
-
+  
     setLoading(true);
     try {
       const formData = new FormData();
@@ -221,23 +217,23 @@ const Add = ({ token }) => {
       if (count) {
         formData.append("count", count);
       }
-      // Append the unified variants as a JSON string.
       formData.append("variants", JSON.stringify(variants));
-
       if (image1) formData.append("image1", image1);
       if (image2) formData.append("image2", image2);
       if (image3) formData.append("image3", image3);
       if (image4) formData.append("image4", image4);
-
+  
       const response = await axios.post(
         `${backendUrl}/api/product/add`,
         formData,
-        { headers: { token },
-      timeout: 60000 }
+        {
+          headers: { token },
+          timeout: 60000 // ✅ 60 seconds timeout
+        }
       );
+  
       if (response.data.success) {
         toast.success(response.data.message);
-        // Reset all fields
         setName("");
         setDescription("");
         setImage1(null);
@@ -258,12 +254,26 @@ const Add = ({ token }) => {
       } else {
         toast.error(response.data.message);
       }
+  
     } catch (error) {
-      console.error(error);
-      toast.error(error.message);
+      if (error.code === 'ECONNABORTED') {
+        console.error("Timeout error:", error.message);
+        toast.error("Upload timed out. Please try again or use Wi-Fi.");
+      } else if (error.response) {
+        console.error("Response error:", error.response);
+        toast.error(error.response.data?.message || "Server error occurred.");
+      } else if (error.request) {
+        console.error("No response from server:", error.request);
+        toast.error("No response from server. Please check your internet.");
+      } else {
+        console.error("Unexpected error:", error.message);
+        toast.error("Network error. Please try again.");
+      }
     }
+  
     setLoading(false);
   };
+  
 
   return (
     <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-4 md:p-8 animate-fadeIn">
