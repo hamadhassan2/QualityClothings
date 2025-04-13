@@ -3,6 +3,7 @@ import axios from "axios";
 import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
 import { assets } from "../assets/assets";
+import { FaTrash } from "react-icons/fa"; // Import the delete icon
 
 const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);
@@ -13,6 +14,7 @@ const Orders = ({ token }) => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [modalImage, setModalImage] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null); // state for order id to confirm deletion
 
   const statusOrder = {
     "Order Placed": 1,
@@ -55,12 +57,33 @@ const Orders = ({ token }) => {
     }
   };
 
+  // Delete order handler (now only gets called after confirmation)
+  const handleDeleteOrder = async (orderId) => {
+    if (!token) return;
+    try {
+      const response = await axios.delete(
+        `${backendUrl}/api/order/delete/${orderId}`,
+        { headers: { token } }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setOrders((prevOrders) =>
+          prevOrders.filter((order) => order._id !== orderId)
+        );
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
   // Filtering orders based on search, status, and date.
   const filteredOrders = orders.filter((order) => {
     const fullName = `${order.address.firstName} ${order.address.lastName}`.toLowerCase();
     const matchesSearch = fullName.includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "All" || order.status === filterStatus;
+    const matchesStatus = filterStatus === "All" || order.status === filterStatus;
     const orderDate = new Date(order.date);
     let matchesDate = true;
     if (startDate) {
@@ -93,7 +116,6 @@ const Orders = ({ token }) => {
         { orderId, status: newStatus },
         { headers: { token } }
       );
-      
       if (response.data.success) {
         toast.success(response.data.message);
         // Update local state
@@ -112,7 +134,6 @@ const Orders = ({ token }) => {
 
   // Handler to update payment status.
   const paymentStatusHandler = async (event, orderId) => {
-    // "Done" means payment is true, otherwise false.
     const newPaymentStatus = event.target.value === "Done";
     try {
       const response = await axios.post(
@@ -120,10 +141,8 @@ const Orders = ({ token }) => {
         { orderId, payment: newPaymentStatus },
         { headers: { token } }
       );
-      
       if (response.data.success) {
         toast.success(response.data.message);
-        // Update local state
         setOrders((prev) =>
           prev.map((order) =>
             order._id === orderId ? { ...order, payment: newPaymentStatus } : order
@@ -198,8 +217,20 @@ const Orders = ({ token }) => {
                 setExpandedOrder(expandedOrder === index ? null : index)
               }
             >
+              {/* Delete icon visible on each order card */}
+              <div className="flex justify-end">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDelete(order._id); // open the delete confirmation modal
+                  }}
+                  className="text-red-500 hover:text-red-600 transition"
+                >
+                  <FaTrash size={20} />
+                </button>
+              </div>
               {isMobile ? (
-                // Layout for Mobile: parcel icon fixed on top and then order details below
+                // Layout for Mobile
                 <div className="flex flex-col gap-4">
                   <div className="flex ">
                     <img
@@ -236,7 +267,7 @@ const Orders = ({ token }) => {
                               alt={item.productName}
                               className="w-16 h-16 object-contain rounded cursor-pointer"
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent card click event
+                                e.stopPropagation();
                                 setModalImage(
                                   Array.isArray(item.productImage)
                                     ? item.productImage[0]
@@ -460,9 +491,7 @@ const Orders = ({ token }) => {
                         <option value="Order Placed">Order Placed</option>
                         <option value="Packing">Packing</option>
                         <option value="Shipped">Shipped</option>
-                        <option value="Out for delivery">
-                          Out for delivery
-                        </option>
+                        <option value="Out for delivery">Out for delivery</option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
@@ -502,6 +531,40 @@ const Orders = ({ token }) => {
             className="max-w-full max-h-full"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* Confirmation Modal for Deletion */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            className="bg-white rounded-lg p-6 w-80"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-gray-800 text-lg mb-4">
+              Are you sure you want to delete this order?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  handleDeleteOrder(confirmDelete);
+                  setConfirmDelete(null);
+                }}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="bg-gray-300 text-gray-800 px-4 py-2 rounded hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

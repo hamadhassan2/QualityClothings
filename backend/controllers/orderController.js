@@ -35,7 +35,7 @@ const updateStatus = async (req, res) => {
       }
     }
 
-    // If changing status to "Cancelled" (from a non-cancelled state), restore the inventory.
+    // If changing status to "Cancelled" (from a non-cancelled state), restore inventory.
     if (status === "Cancelled" && order.status !== "Cancelled") {
       for (const item of order.items) {
         const product = await productModel.findById(item._id);
@@ -134,6 +134,21 @@ const userOrders = async (req, res) => {
   }
 };
 
+// New delete order functionality
+const deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const deletedOrder = await orderModel.findByIdAndDelete(orderId);
+    if (!deletedOrder) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+    return res.json({ success: true, message: "Order deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
 export {
   placeOrder,
   placeOrderStripe,
@@ -142,4 +157,5 @@ export {
   userOrders,
   updateStatus,
   updatePaymentStatus,
+  deleteOrder,
 };
