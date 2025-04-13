@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { MutatingDots } from "react-loader-spinner";
 const currency = "₹ ";
 
 const ProductCard = ({
@@ -11,11 +10,10 @@ const ProductCard = ({
   subCategory,
   price,
   discountedPrice,
-  ages, // represents available size or age options.
+  ages,
   count
 }) => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
 
   const discountPercent =
     discountedPrice && price ? Math.round(((price - discountedPrice) / price) * 100) : 0;
@@ -23,10 +21,7 @@ const ProductCard = ({
   const handleClick = (e) => {
     e.preventDefault();
     window.scrollTo({ top: 0, behavior: "smooth" });
-    setIsLoading(true);
-    setTimeout(() => {
-      navigate(`/product/${id}`);
-    }, 1500);
+    navigate(`/product/${id}`);
   };
 
   return (
@@ -67,7 +62,7 @@ const ProductCard = ({
             )}
           </div>
 
-          {/* Stock and size/age details */}
+          {/* Stock details */}
           <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <span
               className={`text-xs font-medium ${
@@ -79,19 +74,6 @@ const ProductCard = ({
           </div>
         </div>
       </div>
-      {isLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white">
-          <MutatingDots
-            height="120"
-            width="120"
-            color="#32cd32"
-            secondaryColor="#2ecc71"
-            radius="12.5"
-            ariaLabel="mutating-dots-loading"
-            visible={true}
-          />
-        </div>
-      )}
     </div>
   );
 };
