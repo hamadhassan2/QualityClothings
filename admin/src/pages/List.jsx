@@ -7,6 +7,7 @@ import { FaEdit, FaTrash } from 'react-icons/fa';
 import TextField from '@mui/material/TextField';
 import { colorSuggestionsList } from '../Utils/ColorsSuggestions'; // adjust path as needed
 
+
 // Global search component remains unchanged
 const EnhancedSearch = ({ searchTerm, setSearchTerm, searchField, setSearchField }) => (
   <div className="flex flex-col sm:flex-row items-center">
