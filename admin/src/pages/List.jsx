@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import TextField from '@mui/material/TextField';
+import { colorSuggestionsList } from '../Utils/ColorsSuggestions'; // adjust path as needed
 
 // Global search component remains unchanged
 const EnhancedSearch = ({ searchTerm, setSearchTerm, searchField, setSearchField }) => (
@@ -117,6 +118,10 @@ const List = ({ token }) => {
   const availableFilterContainerRef = useRef(null);
   const outFilterContainerRef = useRef(null);
 
+  // New states for color suggestions in the edit modal's variant inputs
+  const [filteredColors, setFilteredColors] = useState(colorSuggestionsList);
+  const [showColorSuggestions, setShowColorSuggestions] = useState(false);
+
   // Fetch list from backend.
   const fetchList = async () => {
     try {
@@ -222,6 +227,8 @@ const List = ({ token }) => {
 
   const openEditModal = (product) => {
     setSelectedProduct({ ...product, combo: product.combo || 1 });
+    // For the new variant color field in the edit modal, initialize filteredColors list
+    setFilteredColors(colorSuggestionsList);
     setShowEditModal(true);
   };
 
@@ -1049,17 +1056,46 @@ const List = ({ token }) => {
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                     />
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className="block text-lg font-medium mb-1">Color</label>
                     <input
                       type="text"
                       placeholder="Enter color"
                       value={selectedProduct.newVariantColor || ""}
-                      onChange={(e) =>
-                        setSelectedProduct({ ...selectedProduct, newVariantColor: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setSelectedProduct({ ...selectedProduct, newVariantColor: e.target.value });
+                        // Update suggestions based on input
+                        const val = e.target.value;
+                        if (val.trim()) {
+                          const filtered = colorSuggestionsList.filter(color =>
+                            color.toLowerCase().includes(val.toLowerCase())
+                          );
+                          setFilteredColors(filtered);
+                        } else {
+                          setFilteredColors(colorSuggestionsList);
+                        }
+                        setShowColorSuggestions(true);
+                      }}
+                      onFocus={() => setShowColorSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowColorSuggestions(false), 150)}
                       className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                     />
+                    {showColorSuggestions && filteredColors.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-10 border bg-white rounded-md max-h-40 overflow-auto">
+                        {filteredColors.map((color, index) => (
+                          <div
+                            key={index}
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                            onMouseDown={() => {
+                              setSelectedProduct({ ...selectedProduct, newVariantColor: color });
+                              setShowColorSuggestions(false);
+                            }}
+                          >
+                            {color}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button
@@ -1094,7 +1130,20 @@ const List = ({ token }) => {
                   Add Variant
                 </button>
               </div>
-
+              <div className="flex items-center gap-4">
+                <input
+                  type="checkbox"
+                  id="bestseller"
+                  checked={selectedProduct.bestseller || false}
+                  onChange={(e) =>
+                    setSelectedProduct({ ...selectedProduct, bestseller: e.target.checked })
+                  }
+                  className="w-5 h-5"
+                />
+                <label htmlFor="bestseller" className="cursor-pointer text-xl">
+                  Add to Bestseller
+                </label>
+              </div>
               {/* Action Buttons */}
               <div className="flex justify-end gap-4 mt-6">
                 <button

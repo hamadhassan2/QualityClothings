@@ -5,6 +5,33 @@ import imageCompression from "browser-image-compression";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
 
+// A fixed list of common CSS color names
+const colorSuggestionsList = [
+  "AliceBlue", "AntiqueWhite", "Aqua", "Aquamarine", "Azure", "Beige", "Bisque",
+  "Black", "BlanchedAlmond", "Blue", "BlueViolet", "Brown", "BurlyWood", "CadetBlue",
+  "Chartreuse", "Chocolate", "Coral", "CornflowerBlue", "Cornsilk", "Crimson", "Cyan",
+  "DarkBlue", "DarkCyan", "DarkGoldenRod", "DarkGray", "DarkGreen", "DarkKhaki",
+  "DarkMagenta", "DarkOliveGreen", "Darkorange", "DarkOrchid", "DarkRed", "DarkSalmon",
+  "DarkSeaGreen", "DarkSlateBlue", "DarkSlateGray", "DarkTurquoise", "DarkViolet",
+  "DeepPink", "DeepSkyBlue", "DimGray", "DodgerBlue", "FireBrick", "FloralWhite",
+  "ForestGreen", "Fuchsia", "Gainsboro", "GhostWhite", "Gold", "GoldenRod", "Gray",
+  "Green", "GreenYellow", "HoneyDew", "HotPink", "IndianRed", "Indigo", "Ivory",
+  "Khaki", "Lavender", "LavenderBlush", "LawnGreen", "LemonChiffon", "LightBlue",
+  "LightCoral", "LightCyan", "LightGoldenRodYellow", "LightGray", "LightGreen",
+  "LightPink", "LightSalmon", "LightSeaGreen", "LightSkyBlue", "LightSlateGray",
+  "LightSteelBlue", "LightYellow", "Lime", "LimeGreen", "Linen", "Magenta", "Maroon",
+  "MediumAquaMarine", "MediumBlue", "MediumOrchid", "MediumPurple", "MediumSeaGreen",
+  "MediumSlateBlue", "MediumSpringGreen", "MediumTurquoise", "MediumVioletRed",
+  "MidnightBlue", "MintCream", "MistyRose", "Moccasin", "NavajoWhite", "Navy",
+  "OldLace", "Olive", "OliveDrab", "Orange", "OrangeRed", "Orchid", "PaleGoldenRod",
+  "PaleGreen", "PaleTurquoise", "PaleVioletRed", "PapayaWhip", "PeachPuff", "Peru",
+  "Pink", "Plum", "PowderBlue", "Purple", "RebeccaPurple", "Red", "RosyBrown",
+  "RoyalBlue", "SaddleBrown", "Salmon", "SandyBrown", "SeaGreen", "SeaShell", "Sienna",
+  "Silver", "SkyBlue", "SlateBlue", "SlateGray", "Snow", "SpringGreen", "SteelBlue",
+  "Tan", "Teal", "Thistle", "Tomato", "Turquoise", "Violet", "Wheat", "White",
+  "WhiteSmoke", "Yellow", "YellowGreen"
+];
+
 const Add = ({ token }) => {
   const [image1, setImage1] = useState(null);
   const [image2, setImage2] = useState(null);
@@ -35,6 +62,10 @@ const Add = ({ token }) => {
   const [variantAgeUnit, setVariantAgeUnit] = useState("Years");
   const [variantQuantity, setVariantQuantity] = useState("");
   const [variantColor, setVariantColor] = useState("");
+
+  // New states for color suggestions for variantColor input
+  const [filteredColors, setFilteredColors] = useState(colorSuggestionsList);
+  const [showColorSuggestions, setShowColorSuggestions] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -111,6 +142,26 @@ const Add = ({ token }) => {
   const handleSubCategoryClick = (suggestion) => {
     setSubCategory(suggestion);
     setShowSubCategorySuggestions(false);
+  };
+
+  // New handler for variant color change with suggestions
+  const handleVariantColorChange = (e) => {
+    const value = e.target.value;
+    setVariantColor(value);
+    if (value.trim()) {
+      const filtered = colorSuggestionsList.filter((color) =>
+        color.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredColors(filtered);
+    } else {
+      setFilteredColors(colorSuggestionsList);
+    }
+    setShowColorSuggestions(true);
+  };
+
+  const handleColorSuggestionClick = (color) => {
+    setVariantColor(color);
+    setShowColorSuggestions(false);
   };
 
   // Helper function: compress image file before saving to state
@@ -492,15 +543,30 @@ const Add = ({ token }) => {
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
               />
             </div>
-            <div>
+            <div className="relative">
               <label className="block text-lg font-medium mb-1">Color</label>
               <input
                 type="text"
                 placeholder="Enter color"
                 value={variantColor}
-                onChange={(e) => setVariantColor(e.target.value)}
+                onChange={handleVariantColorChange}
+                onFocus={() => setShowColorSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowColorSuggestions(false), 150)}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
               />
+              {showColorSuggestions && filteredColors.length > 0 && (
+                <div className="absolute top-full left-0 right-0 z-10 border bg-white rounded-md max-h-40 overflow-auto">
+                  {filteredColors.map((color, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                      onMouseDown={() => handleColorSuggestionClick(color)}
+                    >
+                      {color}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <button
@@ -536,12 +602,13 @@ const Add = ({ token }) => {
               </div>
             )}
           </div>
-        </div>
-        {variants.length === 0 && (
+          {variants.length === 0 && (
           <p className="mt-2 text-sm text-red-500">
             Please add at least one variant.
           </p>
         )}
+        </div>
+        
         <div className="flex items-center gap-4">
           <input
             type="checkbox"

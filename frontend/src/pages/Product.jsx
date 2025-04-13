@@ -256,6 +256,11 @@ const Product = () => {
                         </button>
                       ))}
                     </div>
+                    {selectedColor && (
+                      <p className="mt-2 text-left text-gray-700">
+                        Selected Color: <span className="font-medium">{selectedColor}</span>
+                      </p>
+                    )}
                   </div>
                 )}
               </>
@@ -303,6 +308,11 @@ const Product = () => {
                         </button>
                       ))}
                     </div>
+                    {selectedColor && (
+                      <p className="mt-2 text-left text-gray-700">
+                        Selected Color: <span className="font-medium">{selectedColor}</span>
+                      </p>
+                    )}
                   </div>
                 )}
               </>
