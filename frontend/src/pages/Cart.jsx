@@ -13,7 +13,7 @@ const Cart = () => {
   const [showAnimation, setShowAnimation] = useState(true);
 
   useEffect(() => {
-    // Optionally scroll to top when the component mounts
+    // Scroll to top when the component mounts
     window.scrollTo(0, 0);
     // Show loader animation for 1.5 seconds
     const timer = setTimeout(() => {

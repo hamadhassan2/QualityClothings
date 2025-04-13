@@ -11,9 +11,20 @@ const ShopContextProvider = (props) => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [cartItems, setCartItems] = useState({});
+  
+  // Initialize cartItems from localStorage if available.
+  const [cartItems, setCartItems] = useState(() => {
+    const storedCart = localStorage.getItem("cartItems");
+    return storedCart ? JSON.parse(storedCart) : {};
+  });
+  
   const [products, setProducts] = useState([]);
   const navigate = useNavigate();
+
+  // Save cartItems to localStorage whenever it changes.
+  useEffect(() => {
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
+  }, [cartItems]);
 
   // Enhanced addToCart: Check variant-specific stock before adding.
   const addToCart = async (itemId, variantOrObj) => {
@@ -41,6 +52,7 @@ const ShopContextProvider = (props) => {
       cartData[itemId] && cartData[itemId][variantId]
         ? cartData[itemId][variantId]
         : 0;
+
     if (currentQty + 1 > variantQuantity) {
       toast.error(
         `Cannot add more than available stock. Only ${variantQuantity} available.`
@@ -57,7 +69,6 @@ const ShopContextProvider = (props) => {
       cartData[itemId] = { [variantId]: 1 };
     }
 
-    // No backend cart update call needed for anonymous (guest) users.
     toast.info(
       `Product added. ${variantQuantity - (currentQty + 1)} item(s) remaining in stock.`
     );
@@ -78,7 +89,23 @@ const ShopContextProvider = (props) => {
 
   const updateQuantity = async (itemId, variantId, quantity) => {
     let cartData = structuredClone(cartItems);
-    cartData[itemId][variantId] = quantity;
+    // Update the quantity for the given product and variant.
+    // Remove the variant if quantity is zero.
+    if (quantity === 0) {
+      if (cartData[itemId]) {
+        delete cartData[itemId][variantId];
+        // If there are no variants left for this product, remove the product entry.
+        if (Object.keys(cartData[itemId]).length === 0) {
+          delete cartData[itemId];
+        }
+      }
+    } else {
+      if (!cartData[itemId]) {
+        cartData[itemId] = { [variantId]: quantity };
+      } else {
+        cartData[itemId][variantId] = quantity;
+      }
+    }
     setCartItems(cartData);
     // Removed backend update since no user login exists.
   };
@@ -136,7 +163,11 @@ const ShopContextProvider = (props) => {
     backendUrl,
   };
 
-  return <ShopContext.Provider value={value}>{props.children}</ShopContext.Provider>;
+  return (
+    <ShopContext.Provider value={value}>
+      {props.children}
+    </ShopContext.Provider>
+  );
 };
 
 export default ShopContextProvider;

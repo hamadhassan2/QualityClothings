@@ -3,7 +3,7 @@ import axios from "axios";
 import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
 import { assets } from "../assets/assets";
-import { FaTrash } from "react-icons/fa"; // Import the delete icon
+import { FaTrash } from "react-icons/fa"; // Delete icon
 
 const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);
@@ -14,7 +14,7 @@ const Orders = ({ token }) => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [modalImage, setModalImage] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null); // state for order id to confirm deletion
+  const [confirmDelete, setConfirmDelete] = useState(null); // state holding order id to confirm deletion
 
   const statusOrder = {
     "Order Placed": 1,
@@ -41,7 +41,7 @@ const Orders = ({ token }) => {
         { headers: { token } }
       );
       if (response.data.success) {
-        // Sort by status (using statusOrder) and then by date (most recent first).
+        // Sort by status (using statusOrder) then by date (most recent first)
         const sortedOrders = response.data.orders.sort((a, b) => {
           if (statusOrder[a.status] !== statusOrder[b.status]) {
             return statusOrder[a.status] - statusOrder[b.status];
@@ -57,7 +57,7 @@ const Orders = ({ token }) => {
     }
   };
 
-  // Delete order handler (now only gets called after confirmation)
+  // Delete order handler
   const handleDeleteOrder = async (orderId) => {
     if (!token) return;
     try {
@@ -65,7 +65,6 @@ const Orders = ({ token }) => {
         `${backendUrl}/api/order/delete/${orderId}`,
         { headers: { token } }
       );
-
       if (response.data.success) {
         toast.success(response.data.message);
         setOrders((prevOrders) =>
@@ -157,7 +156,7 @@ const Orders = ({ token }) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 bg-gray-100 min-h-screen">
+    <div className="max-w-7xl mx-auto p-4 bg-gray-100 min-h-screen relative">
       <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <h3 className="text-3xl md:text-4xl font-extrabold text-gray-800">
           Order Management
@@ -183,7 +182,7 @@ const Orders = ({ token }) => {
             placeholder="Search by name..."
             className="w-full h-12 md:mt-9 md:w-auto p-3 border border-gray-300 rounded-md text-base shadow-sm focus:outline-none focus:ring-1 focus:ring-gray-400 hover:border-gray-400"
           />
-          <div className="flex gap-2 items-center grid grid-col-1">
+          <div className="flex gap-2 items-center">
             <label className="text-gray-700 text-xl">From:</label>
             <input
               type="date"
@@ -192,7 +191,7 @@ const Orders = ({ token }) => {
               className="w-full md:w-auto p-3 border border-gray-300 rounded-md text-base shadow-sm focus:outline-none focus:ring-1 focus:ring-gray-400 hover:border-gray-400"
             />
           </div>
-          <div className="flex gap-2 items-center grid grid-col-1">
+          <div className="flex gap-2 items-center">
             <label className="text-gray-700 text-xl">To:</label>
             <input
               type="date"
@@ -209,7 +208,7 @@ const Orders = ({ token }) => {
           filteredOrders.map((order, index) => (
             <div
               key={order._id || index}
-              className={`bg-white border border-gray-200 rounded-2xl shadow-lg p-6 transition transform hover:scale-105 hover:shadow-2xl cursor-pointer ${
+              className={`relative bg-white border border-gray-200 rounded-2xl shadow-lg p-6 transition transform hover:scale-105 hover:shadow-2xl cursor-pointer ${
                 isMobile ? "w-11/12 mx-auto" : ""
               }`}
               onClick={() =>
@@ -217,7 +216,18 @@ const Orders = ({ token }) => {
                 setExpandedOrder(expandedOrder === index ? null : index)
               }
             >
-              
+              <div className="mb-6">
+              {/* Delete Icon Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDelete(order._id);
+                }}
+                className="absolute top-3 right-6 mb-6  text-red-500 hover:text-red-700"
+              >
+                <FaTrash size={18} />
+              </button>
+              </div>
               {isMobile ? (
                 // Layout for Mobile
                 <div className="flex flex-col gap-4">
