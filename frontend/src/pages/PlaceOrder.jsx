@@ -8,13 +8,13 @@ import { MutatingDots } from "react-loader-spinner";
 
 // Dummy fallback data for fields other than the name.
 const dummyData = {
-  email: "john.doe@example.com",
-  street: "123 Dummy Street",
-  city: "Dummy City",
-  state: "Dummy State",
-  zipcode: "00000",
-  country: "Dummy Country",
-  phone: "1234567890",
+  email: "",
+  street: "",
+  city: "",
+  state: "",
+  zipcode: "",
+  country: "",
+  phone: "",
 };
 
 const PlaceOrder = () => {

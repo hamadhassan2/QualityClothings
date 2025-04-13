@@ -216,18 +216,7 @@ const Orders = ({ token }) => {
                 setExpandedOrder(expandedOrder === index ? null : index)
               }
             >
-              <div className="mb-6">
-              {/* Delete Icon Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmDelete(order._id);
-                }}
-                className="absolute top-3 right-6 mb-6  text-red-500 hover:text-red-700"
-              >
-                <FaTrash size={18} />
-              </button>
-              </div>
+             
               {isMobile ? (
                 // Layout for Mobile
                 <div className="flex flex-col gap-4">

@@ -1,45 +1,46 @@
-import React, { useContext, useEffect, useState } from "react";
-import { ShopContext } from "../context/ShopContext";
-import Title from "./Title";
-import ProductCard from "./ProductCard";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
-const RelatedProduct = ({ category, subCategory }) => {
-  const { products } = useContext(ShopContext);
-  const [related, setRelated] = useState([]);
+const ProductCard = ({
+  id,
+  name,
+  img,
+  category,
+  subCategory,
+  price,
+  discountedPrice,
+  ages,
+  count,
+}) => {
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (products.length > 0) {
-      const filtered = products.filter(
-        (item) => item.category === category && item.subCategory === subCategory
-      );
-      setRelated(filtered.slice(0, 5));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, category, subCategory]);
+  const handleCardClick = () => {
+    // Navigate to the product's detail page, e.g., /product/:id
+    navigate(`/product/${id}`);
+  };
 
   return (
-    <div className="my-24">
-      <div className="text-center text-3xl py-2">
-        <Title text1={"RELATED"} text2={"PRODUCTS"} />
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6">
-        {related.map((item) => (
-          <ProductCard
-            key={item._id}
-            id={item._id}
-            name={item.name}
-            img={Array.isArray(item.image) ? item.image[0] : item.image}
-            category={item.category}
-            subCategory={item.subCategory}
-            price={item.price}
-            discountedPrice={item.discountedPrice}
-            ages={item.ages}
-            count={item.count}
-          />
-        ))}
-      </div>
+    <div 
+      className="cursor-pointer hover:shadow-lg transition p-4 border rounded-lg"
+      onClick={handleCardClick}
+    >
+      <img src={img} alt={name} className="w-full h-auto object-cover" />
+      <h3 className="font-bold text-lg mt-2">{name}</h3>
+      {/* Other info such as price, category, etc. */}
+      <p className="text-gray-600">
+        {discountedPrice ? (
+          <>
+            <span className="line-through text-sm text-red-500 mr-2">
+              {price}
+            </span>
+            <span>{discountedPrice}</span>
+          </>
+        ) : (
+          <span>{price}</span>
+        )}
+      </p>
     </div>
   );
 };
 
-export default RelatedProduct;
+export default ProductCard;
