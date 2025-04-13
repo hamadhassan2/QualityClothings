@@ -1,6 +1,6 @@
-import React from "react";
-import { Link } from "react-router-dom";
-
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MutatingDots } from "react-loader-spinner";
 const currency = "₹ ";
 
 const ProductCard = ({
@@ -14,11 +14,23 @@ const ProductCard = ({
   ages, // represents available size or age options.
   count
 }) => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+
   const discountPercent =
     discountedPrice && price ? Math.round(((price - discountedPrice) / price) * 100) : 0;
 
+  const handleClick = (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsLoading(true);
+    setTimeout(() => {
+      navigate(`/product/${id}`);
+    }, 1500);
+  };
+
   return (
-    <Link to={`/product/${id}`} className="block">
+    <div onClick={handleClick} className="block relative cursor-pointer">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl">
         {/* Responsive image container */}
         <div className="relative w-full bg-gray-50 overflow-hidden h-48 sm:h-64 md:h-80 lg:h-80 xl:h-96">
@@ -64,22 +76,23 @@ const ProductCard = ({
             >
               {Number(count) > 0 ? "In Stock" : "Out of Stock"}
             </span>
-            {/* {ages && Array.isArray(ages) && ages.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {ages.map((option, index) => (
-                  <span
-                    key={index}
-                    className="bg-indigo-100 text-indigo-800 rounded-full px-3 py-0.5 text-xs shadow-sm"
-                  >
-                    {option}
-                  </span>
-                ))}
-              </div>
-            )} */}
           </div>
         </div>
       </div>
-    </Link>
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white">
+          <MutatingDots
+            height="120"
+            width="120"
+            color="#32cd32"
+            secondaryColor="#2ecc71"
+            radius="12.5"
+            ariaLabel="mutating-dots-loading"
+            visible={true}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 

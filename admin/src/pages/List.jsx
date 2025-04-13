@@ -929,9 +929,9 @@ const List = ({ token }) => {
                   >
                     <option value="Men">Men</option>
                     <option value="Women">Women</option>
-                    <option value="Boy">Boy</option>
+                    <option value="Boys">Boys</option>
                     <option value="Girls">Girls</option>
-                    <opiton value="Unisex">Unisex</opiton>
+                    <option value="Unisex">Unisex</option>
                   </select>
                 </div>
                 <div className="relative">
