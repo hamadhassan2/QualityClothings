@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
 import axios from "axios";
+import imageCompression from "browser-image-compression";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
 
@@ -37,6 +38,7 @@ const Add = ({ token }) => {
 
   const [loading, setLoading] = useState(false);
 
+  // Fetch subcategories and brand suggestions as in your current code
   useEffect(() => {
     async function fetchSubCategories() {
       try {
@@ -111,16 +113,37 @@ const Add = ({ token }) => {
     setShowSubCategorySuggestions(false);
   };
 
+  // Helper function: compress image file before saving to state
+  const compressAndSetImage = async (file, setter) => {
+    try {
+      const options = {
+        maxSizeMB: 1, // Adjust maximum file size (in MB) as needed
+        maxWidthOrHeight: 1920, // Optional: adjust resolution
+        useWebWorker: true,
+      };
+      const compressedFile = await imageCompression(file, options);
+      setter(compressedFile);
+    } catch (error) {
+      console.error("Image compression error:", error);
+      // If error occurs, fallback to original file
+      setter(file);
+    }
+  };
+
+  // Change handlers for each image input now call compressAndSetImage
+  const handleImageChange = (e, setter) => {
+    const file = e.target.files[0];
+    if (file) {
+      compressAndSetImage(file, setter);
+    }
+  };
+
   const addVariant = () => {
     if (!variantSize.trim() && !variantAge.trim()) {
       toast.error("Please enter at least a size or an age for the variant.");
       return;
     }
-    if (
-      !variantQuantity.trim() ||
-      isNaN(variantQuantity) ||
-      !variantColor.trim()
-    ) {
+    if (!variantQuantity.trim() || isNaN(variantQuantity) || !variantColor.trim()) {
       toast.error("Please enter a valid quantity and color for the variant.");
       return;
     }
@@ -206,7 +229,7 @@ const Add = ({ token }) => {
         formData,
         {
           headers: { token },
-          timeout: 60000
+          timeout: 120000 // Increased timeout (in ms)
         }
       );
       if (response.data.success) {
@@ -232,7 +255,7 @@ const Add = ({ token }) => {
         toast.error(response.data.message);
       }
     } catch (error) {
-      if (error.code === 'ECONNABORTED') {
+      if (error.code === "ECONNABORTED") {
         console.error("Timeout error:", error.message);
         toast.error("Upload timed out. Please try again or use Wi-Fi.");
       } else if (error.response) {
@@ -277,9 +300,10 @@ const Add = ({ token }) => {
                   alt={`Upload ${item.id}`}
                 />
                 <input
-                  onChange={(e) => item.setter(e.target.files[0])}
                   type="file"
                   id={item.id}
+                  accept="image/*"
+                  onChange={(e) => handleImageChange(e, item.setter)}
                   hidden
                 />
               </label>

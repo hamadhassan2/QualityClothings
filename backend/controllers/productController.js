@@ -45,11 +45,15 @@ const listFilteredProducts = async (req, res) => {
 
     const variantFilters = [];
     if (ageFilter && ageFilter.length > 0) {
+      // Updated: use regex comparison for age and ageUnit (treat age as string)
       const ageConditions = ageFilter.map((item) => {
         const parts = item.split(" ");
-        const ageNum = Number(parts[0]);
+        const ageValue = parts[0].trim();
         const ageUnit = parts[1] ? parts[1].trim() : "";
-        return { age: ageNum, ageUnit: ageUnit };
+        return {
+          age: { $regex: `^${ageValue}$`, $options: "i" },
+          ageUnit: { $regex: `^${ageUnit}$`, $options: "i" }
+        };
       });
       variantFilters.push({ $or: ageConditions });
     }

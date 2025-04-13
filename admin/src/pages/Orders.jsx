@@ -217,18 +217,7 @@ const Orders = ({ token }) => {
                 setExpandedOrder(expandedOrder === index ? null : index)
               }
             >
-              {/* Delete icon visible on each order card */}
-              <div className="flex justify-end">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmDelete(order._id); // open the delete confirmation modal
-                  }}
-                  className="text-red-500 hover:text-red-600 transition"
-                >
-                  <FaTrash size={20} />
-                </button>
-              </div>
+              
               {isMobile ? (
                 // Layout for Mobile
                 <div className="flex flex-col gap-4">

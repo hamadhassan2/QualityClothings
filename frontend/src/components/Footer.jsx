@@ -68,7 +68,7 @@ const Footer = () => {
                 Whatsapp: +91 99634 72288
               </a>
             </li>
-            <li>Address: 567 Delhi, India</li>
+            <li>Address: HIG Chitrapuri Hills, Manikonda, Hyderabad, India</li>
             <li>
               Email:{" "}
               <a
