@@ -64,10 +64,14 @@ const computeCount = computeCountUnified;
 const computeColors = computeColorsUnified;
 
 const List = ({ token }) => {
+  // at the top of your List component
+const [bestSellerOnly, setBestSellerOnly] = useState(false);
+
   const [list, setList] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
+
   // Global search states
   const [searchTerm, setSearchTerm] = useState("");
   const [searchField, setSearchField] = useState("name");
@@ -440,10 +444,17 @@ const List = ({ token }) => {
     }
     return true;
   };
-
-  const availableList = list.filter(item => filterListForAvailable(item) && computeCount(item) > 0);
-  const outOfStockList = list.filter(item => filterListForOut(item) && computeCount(item) === 0);
-
+  const availableList = list.filter(item =>
+    (!bestSellerOnly || item.bestseller) &&
+    filterListForAvailable(item) &&
+    computeCount(item) > 0
+  );
+  
+  const outOfStockList = list.filter(item =>
+    (!bestSellerOnly || item.bestseller) &&
+    filterListForOut(item) &&
+    computeCount(item) === 0
+  );
   useEffect(() => {
     fetchList();
   }, []);
@@ -453,14 +464,25 @@ const List = ({ token }) => {
 
   return (
     <section className="p-3">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
         <p className="mb-4 md:mb-0 text-3xl font-bold">ALL PRODUCTS LIST</p>
+      <div className='flex flex-col justify-end gap-4'>
         <EnhancedSearch
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
           searchField={searchField}
           setSearchField={setSearchField}
         />
+        <label className="inline-flex items-end justify-end text-base">
+    <input
+      type="checkbox"
+      className="form-checkbox h-5 w-5 text-green-600"
+      checked={bestSellerOnly}
+      onChange={e => setBestSellerOnly(e.target.checked)}
+    />
+    <span className="ml-2">Best Sellers Only</span>
+  </label>
+  </div>
       </div>
 
       {/* Available Products */}
@@ -1206,3 +1228,4 @@ const List = ({ token }) => {
 };
 
 export default List;
+       

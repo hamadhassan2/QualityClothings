@@ -166,20 +166,27 @@ const Add = ({ token }) => {
 
   // Helper function: compress image file before saving to state
   const compressAndSetImage = async (file, setter) => {
-    try {
-      const options = {
-        maxSizeMB: 1, // Adjust maximum file size (in MB) as needed
-        maxWidthOrHeight: 1920, // Optional: adjust resolution
-        useWebWorker: true,
-      };
-      const compressedFile = await imageCompression(file, options);
+      try {
+        const options = {
+          maxSizeMB: 1,
+         maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        // compress returns a Blob
+         const compressedBlob = await imageCompression(file, options);
+         // wrap it back into a File so it keeps the original filename
+         const compressedFile = new File(
+           [compressedBlob],
+        file.name,
+          { type: compressedBlob.type }
+         );
       setter(compressedFile);
-    } catch (error) {
-      console.error("Image compression error:", error);
-      // If error occurs, fallback to original file
-      setter(file);
-    }
-  };
+      } catch (error) {
+        console.error("Image compression error:", error);
+       // fallback to the original File if compression fails
+        setter(file);
+      }
+     };
 
   // Change handlers for each image input now call compressAndSetImage
   const handleImageChange = (e, setter) => {

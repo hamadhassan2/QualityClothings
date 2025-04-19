@@ -13,7 +13,9 @@ const Navbar = () => {
   const menuItems = ["/", "/collection", "/about"];
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-200">
+    
+     <nav className="bg-white shadow-lg sticky top-[42px] z-40 border-b border-gray-200">
+    
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:pl-2 lg:pr-8 py-4 flex items-center">
         {/* Left Column: Logo */}
         <div className="flex-1">

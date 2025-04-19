@@ -42,6 +42,7 @@ const BestSeller = () => {
               ages={item.ages}
               count={item.count}
               color={item.color}
+              bestseller={item.bestseller}
             />
           );
         })}

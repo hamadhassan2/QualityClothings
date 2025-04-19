@@ -18,4 +18,13 @@ a.active hr{
         background-color: black;
         color: white;
     }
+    .ticker-animate {
+        animation: ticker 8s linear infinite; /* increased speed for phone */
+    }
+  }@keyframes ticker {
+    from { transform: translateX(0);    }
+    to   { transform: translateX(-50%); }   /* 50 % because we duplicated the text */
+  }
+  .ticker-animate {
+    animation: ticker 10s linear infinite;  /* increased speed */
   }

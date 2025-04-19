@@ -7,7 +7,7 @@ export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
   const currency = "₹";
-  const delivery_fee = 10;
+  const delivery_fee = 0;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
@@ -27,53 +27,47 @@ const ShopContextProvider = (props) => {
   }, [cartItems]);
 
   // Enhanced addToCart: Check variant-specific stock before adding.
-  const addToCart = async (itemId, variantOrObj) => {
-    const productData = products.find((product) => product._id === itemId);
-    if (!productData) {
-      toast.error("Product not found.");
-      return;
-    }
+// …inside ShopContextProvider…
 
-    let variantId;
-    let variantQuantity = 0;
-    if (typeof variantOrObj === "object" && variantOrObj !== null) {
-      variantId = variantOrObj._id.toString();
-      variantQuantity = Number(variantOrObj.quantity) || 0;
-    } else {
-      variantId = variantOrObj;
-      const variant = productData.variants.find(
-        (v) => v._id.toString() === variantOrObj
-      );
-      variantQuantity = variant ? Number(variant.quantity) : 0;
-    }
+const addToCart = async (itemId, variantOrObj) => {
+  const productData = products.find((p) => p._id === itemId);
+  if (!productData) {
+    toast.error("Product not found.");
+    return;
+  }
 
-    let cartData = structuredClone(cartItems);
-    const currentQty =
-      cartData[itemId] && cartData[itemId][variantId]
-        ? cartData[itemId][variantId]
-        : 0;
+  // figure out which variant & its stock
+  let variantId, stockQty;
+  if (typeof variantOrObj === "object" && variantOrObj !== null) {
+    variantId  = variantOrObj._id.toString();
+    stockQty   = Number(variantOrObj.quantity) || 0;
+  } else {
+    variantId  = variantOrObj;
+    const v     = productData.variants.find((v) => v._id.toString() === variantOrObj);
+    stockQty    = v ? Number(v.quantity) : 0;
+  }
 
-    if (currentQty + 1 > variantQuantity) {
-      toast.error(
-        `Cannot add more than available stock. Only ${variantQuantity} available.`
-      );
-      return;
-    }
-    if (cartData[itemId]) {
-      if (cartData[itemId][variantId]) {
-        cartData[itemId][variantId] += 1;
-      } else {
-        cartData[itemId][variantId] = 1;
-      }
-    } else {
-      cartData[itemId] = { [variantId]: 1 };
-    }
+  // clone & get current cart qty
+  const newCart    = structuredClone(cartItems);
+  const currentQty = (newCart[itemId]?.[variantId] || 0);
 
-    toast.info(
-      `Product added. ${variantQuantity - (currentQty + 1)} item(s) remaining in stock.`
-    );
-    setCartItems(cartData);
-  };
+  // can't exceed stock
+  if (currentQty + 1 > stockQty) {
+    toast.error(`Only ${stockQty} in stock.`);
+    return;
+  }
+
+  // bump quantity
+  const updatedQty = currentQty + 1;
+  if (!newCart[itemId])         newCart[itemId] = { [variantId]: updatedQty };
+  else if (!newCart[itemId][variantId]) newCart[itemId][variantId] = updatedQty;
+  else                           newCart[itemId][variantId] = updatedQty;
+
+  // persist & notify
+  setCartItems(newCart);
+  toast.info(`${updatedQty} item${updatedQty > 1 ? "s" : ""} in your cart.`);
+};
+
 
   const getCartCount = () => {
     let totalCount = 0;
@@ -171,3 +165,4 @@ const ShopContextProvider = (props) => {
 };
 
 export default ShopContextProvider;
+

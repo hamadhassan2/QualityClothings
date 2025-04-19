@@ -4,18 +4,18 @@ import Title from '../components/Title';
 import { assets } from '../assets/frontend_assets/assets';
 import CartTotal from '../components/CartTotal';
 import { toast } from 'react-toastify';
-import { MutatingDots } from "react-loader-spinner";
-import { FaShoppingCart } from "react-icons/fa";
+import { MutatingDots } from 'react-loader-spinner';
+import { FaShoppingCart } from 'react-icons/fa';
+import OurPolicy from '../components/OurPolicy';
 
 const Cart = () => {
   const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext);
   const [cartData, setCartData] = useState([]);
   const [showAnimation, setShowAnimation] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    // Scroll to top when the component mounts
     window.scrollTo(0, 0);
-    // Show loader animation for 1.5 seconds
     const timer = setTimeout(() => {
       setShowAnimation(false);
     }, 1500);
@@ -55,9 +55,9 @@ const Cart = () => {
     }
   }, [cartItems, products]);
 
-  const handleCheckout = () => {
+  const handleProceedClick = () => {
     if (cartData.length > 0) {
-      navigate('/place-order');
+      setShowModal(true);
     } else {
       toast.info('Your cart is empty. Please add items before proceeding to checkout.');
     }
@@ -70,6 +70,20 @@ const Cart = () => {
       return;
     }
     updateQuantity(item._id, item.variantKey, newQty);
+  };
+
+  const closeModal = () => setShowModal(false);
+  const handleFillForm = () => {
+    setShowModal(false);
+    navigate('/place-order');
+  };
+  const handleContactSeller = () => {
+    const sellerNumber = '1234567890'; // replace with actual seller number
+    const message = `Hello, I'm interested in placing an order from the cart.`;
+    window.open(
+      `https://wa.me/${sellerNumber}?text=${encodeURIComponent(message)}`,
+      '_blank'
+    );
   };
 
   return (
@@ -87,7 +101,7 @@ const Cart = () => {
           />
         </div>
       )}
-      <div className={!showAnimation ? "opacity-100 transition-opacity duration-700" : "opacity-0"}>
+      <div className={!showAnimation ? 'opacity-100 transition-opacity duration-700' : 'opacity-0'}>
         <div className="mb-8">
           <Title text1="YOUR" text2="CART" />
         </div>
@@ -132,9 +146,7 @@ const Cart = () => {
                   </div>
                 </div>
 
-                {/* Quantity Controls + Remove */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 sm:mt-0">
-                  {/* Desktop quantity input */}
                   <div className="hidden sm:block">
                     <input
                       type="number"
@@ -144,8 +156,6 @@ const Cart = () => {
                       onChange={(e) => handleChange(item, Number(e.target.value))}
                     />
                   </div>
-
-                  {/* Mobile quantity buttons */}
                   <div className="flex items-center gap-2 sm:hidden">
                     <button
                       onClick={() => handleChange(item, item.quantity - 1)}
@@ -161,8 +171,6 @@ const Cart = () => {
                       +
                     </button>
                   </div>
-
-                  {/* Delete button */}
                   <button onClick={() => updateQuantity(item._id, item.variantKey, 0)}>
                     <img
                       src={assets.bin_icon}
@@ -184,7 +192,6 @@ const Cart = () => {
           )}
         </div>
 
-        {/* Checkout Summary */}
         {cartData.length > 0 && (
           <div className="mt-16">
             <div className="w-full sm:w-[450px] mx-auto">
@@ -192,7 +199,7 @@ const Cart = () => {
             </div>
             <div className="mt-8 text-center">
               <button
-                onClick={handleCheckout}
+                onClick={handleProceedClick}
                 className="bg-gray-800 text-white text-lg px-8 py-3 rounded-full transition duration-300 hover:bg-gray-700 shadow"
               >
                 PROCEED TO CHECKOUT
@@ -200,7 +207,39 @@ const Cart = () => {
             </div>
           </div>
         )}
+
+        <OurPolicy />
       </div>
+
+      {/* Checkout Guidelines Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-11/12 max-w-lg mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Next Steps</h2>
+            <ol className="list-decimal list-inside text-left space-y-2 mb-6">
+              <li>Fill out the order form with your details.</li>
+              <li>Click <span className="font-semibold">Contact Seller</span> to open WhatsApp.</li>
+              <li>Press <span className="font-semibold">Send</span> in WhatsApp to message the seller.</li>
+              <li>After confirmation, send payment via GPay to the provided number.</li>
+            </ol>
+            <div className="flex flex-col sm:flex-row justify-end gap-4">
+              <button
+                onClick={handleFillForm}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full"
+              >
+               Proceed
+              </button>
+             
+              <button
+                onClick={closeModal}
+                className="text-gray-600 hover:text-gray-800 px-4 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

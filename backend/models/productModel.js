@@ -60,5 +60,14 @@ productSchema.pre("findOneAndUpdate", function (next) {
   next();
 });
 
+// Add a static method to sort products with bestsellers first
+productSchema.statics.sortWithBestSellersFirst = function (products) {
+  return products.sort((a, b) => {
+    if (a.bestseller && !b.bestseller) return -1;
+    if (!a.bestseller && b.bestseller) return 1;
+    return 0;
+  });
+};
+
 const productModel = mongoose.models.Product || mongoose.model("Product", productSchema);
 export default productModel;

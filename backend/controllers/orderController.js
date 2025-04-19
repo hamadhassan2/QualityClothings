@@ -1,91 +1,13 @@
+// controllers/orderController.js
+
 import orderModel from "../models/orderModel.js";
 import productModel from "../models/productModel.js";
 
-const updateStatus = async (req, res) => {
-  try {
-    const { orderId, status } = req.body;
-    const order = await orderModel.findById(orderId);
-    if (!order) {
-      return res.json({ success: false, message: "Order not found" });
-    }
-
-    // If the order was previously cancelled and now is changed to a non-cancelled status,
-    // reduce inventory accordingly.
-    if (order.status === "Cancelled" && status !== "Cancelled") {
-      for (const item of order.items) {
-        const product = await productModel.findById(item._id);
-        if (!product) continue;
-        const variantIndex = product.variants.findIndex(
-          (v) => v._id.toString() === item.variantId
-        );
-        if (variantIndex === -1) {
-          return res.json({
-            success: false,
-            message: `Variant not found for product ${item.productName}`,
-          });
-        }
-        if (product.variants[variantIndex].quantity < item.quantity) {
-          return res.json({
-            success: false,
-            message: `Insufficient stock for product ${item.productName}`,
-          });
-        }
-        product.variants[variantIndex].quantity -= item.quantity;
-        await product.save();
-      }
-    }
-
-    // If changing status to "Cancelled" (from a non-cancelled state), restore inventory.
-    if (status === "Cancelled" && order.status !== "Cancelled") {
-      for (const item of order.items) {
-        const product = await productModel.findById(item._id);
-        if (!product) continue;
-        const variantIndex = product.variants.findIndex(
-          (v) => v._id.toString() === item.variantId
-        );
-        if (variantIndex !== -1) {
-          product.variants[variantIndex].quantity += item.quantity;
-        } else {
-          product.variants.push({
-            size: item.size,
-            age: item.age,
-            ageUnit: item.ageUnit,
-            quantity: item.quantity,
-            color: item.color || "default",
-          });
-        }
-        await product.save();
-      }
-    }
-
-    // Update the order status irrespective of any inventory adjustments.
-    order.status = status;
-    await order.save();
-    return res.json({ success: true, message: "Order Status Updated" });
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-const updatePaymentStatus = async (req, res) => {
-  try {
-    const { orderId, payment } = req.body;
-    await orderModel.findByIdAndUpdate(orderId, { payment }, { new: true });
-    res.json({
-      success: true,
-      message: "Payment status updated successfully",
-    });
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
-  }
-};
-
-const placeOrder = async (req, res) => {
+// ─── Place Order (COD) ───────────────────────────────────────────────────────
+export const placeOrder = async (req, res) => {
   try {
     const { items, amount, address } = req.body;
-    const orderData = {
+    const newOrder = new orderModel({
       userId: "guest",
       items,
       address,
@@ -94,68 +16,139 @@ const placeOrder = async (req, res) => {
       payment: false,
       date: Date.now(),
       status: "Order Placed",
-    };
-    const newOrder = new orderModel(orderData);
+    });
     await newOrder.save();
-
-    res.json({ success: true, message: "Order Placed" });
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    return res.json({ success: true, message: "Order Placed" });
+  } catch (err) {
+    console.error("placeOrder:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-const placeOrderStripe = async (req, res) => {
-  res.json({ success: false, message: "Stripe method not implemented yet." });
+// ─── Place Order via Stripe (stub) ───────────────────────────────────────────
+export const placeOrderStripe = async (req, res) => {
+  // TODO: implement Stripe payment flow
+  return res.json({ success: false, message: "Stripe method not implemented yet." });
 };
 
-const placeOrderRazorpay = async (req, res) => {
-  res.json({ success: false, message: "Razorpay method not implemented yet." });
+// ─── Place Order via Razorpay (stub) ─────────────────────────────────────────
+export const placeOrderRazorpay = async (req, res) => {
+  // TODO: implement Razorpay payment flow
+  return res.json({ success: false, message: "Razorpay method not implemented yet." });
 };
 
-const allOrders = async (req, res) => {
+// ─── Get All Orders (admin) ──────────────────────────────────────────────────
+export const allOrders = async (req, res) => {
   try {
     const orders = await orderModel.find({});
-    res.json({ success: true, orders });
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    return res.json({ success: true, orders });
+  } catch (err) {
+    console.error("allOrders:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-const userOrders = async (req, res) => {
+// ─── Get User’s Orders ────────────────────────────────────────────────────────
+export const userOrders = async (req, res) => {
   try {
     const { userId } = req.body;
     const orders = await orderModel.find({ userId });
-    res.json({ success: true, orders });
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    return res.json({ success: true, orders });
+  } catch (err) {
+    console.error("userOrders:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// New delete order functionality
-const deleteOrder = async (req, res) => {
+// ─── Update Order Status & Adjust Inventory ─────────────────────────────────
+export const updateStatus = async (req, res) => {
+  try {
+    const { orderId, status } = req.body;
+    const order = await orderModel.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+    // If “Cancelled” → non‑Cancelled: deduct stock
+    if (order.status === "Cancelled" && status !== "Cancelled") {
+      for (const item of order.items) {
+        const p = await productModel.findById(item._id);
+        if (!p) continue;
+        const i = p.variants.findIndex(v => v._id.toString() === item.variantId);
+        if (i === -1) {
+          return res.json({ success: false, message: `Variant not found for ${item.productName}` });
+        }
+        if (p.variants[i].quantity < item.quantity) {
+          return res.json({ success: false, message: `Insufficient stock for ${item.productName}` });
+        }
+        p.variants[i].quantity -= item.quantity;
+        await p.save();
+      }
+    }
+
+    // If non‑Cancelled → “Cancelled”: restore stock
+    if (status === "Cancelled" && order.status !== "Cancelled") {
+      for (const item of order.items) {
+        const p = await productModel.findById(item._id);
+        if (!p) continue;
+        const i = p.variants.findIndex(v => v._id.toString() === item.variantId);
+        if (i !== -1) {
+          p.variants[i].quantity += item.quantity;
+        } else {
+          p.variants.push({
+            size: item.size,
+            age: item.age,
+            ageUnit: item.ageUnit,
+            quantity: item.quantity,
+            color: item.color || "default",
+          });
+        }
+        await p.save();
+      }
+    }
+
+    order.status = status;
+    await order.save();
+    return res.json({ success: true, message: "Order status updated" });
+  } catch (err) {
+    console.error("updateStatus:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─── Update Payment Status ───────────────────────────────────────────────────
+export const updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId, payment } = req.body;
+    await orderModel.findByIdAndUpdate(orderId, { payment }, { new: true });
+    return res.json({ success: true, message: "Payment status updated" });
+  } catch (err) {
+    console.error("updatePaymentStatus:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─── Delete Order & Restore Inventory ────────────────────────────────────────
+export const deleteOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const deletedOrder = await orderModel.findByIdAndDelete(orderId);
-    if (!deletedOrder) {
-      return res.status(404).json({ success: false, message: "Order not found" });
-    }
-    return res.json({ success: true, message: "Order deleted successfully" });
-  } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
-  }
-};
+    const order = await orderModel.findById(orderId);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-export {
-  placeOrder,
-  placeOrderStripe,
-  placeOrderRazorpay,
-  allOrders,
-  userOrders,
-  updateStatus,
-  updatePaymentStatus,
-  deleteOrder,
+    // Restore each item’s stock
+    for (const item of order.items) {
+      const p = await productModel.findById(item._id);
+      if (!p) continue;
+      const i = p.variants.findIndex(v => v._id.toString() === item.variantId);
+      if (i !== -1) {
+        p.variants[i].quantity += item.quantity;
+        await p.save();
+      }
+    }
+
+    // Remove the order record
+    await orderModel.findByIdAndDelete(orderId);
+    return res.json({ success: true, message: "Order deleted and inventory restored" });
+  } catch (err) {
+    console.error("deleteOrder:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
 };

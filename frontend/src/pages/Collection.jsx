@@ -43,6 +43,16 @@ const EnhancedSearch = ({ searchTerm, setSearchTerm, searchField, setSearchField
   </div>
 );
 
+// Utility to shuffle an array (Fisher‑Yates)
+const shuffleArray = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+
 const Collection = () => {
   const { search, showSearch } = useContext(ShopContext);
   const [allProducts, setAllProducts] = useState([]);
@@ -62,21 +72,37 @@ const Collection = () => {
   const [showPriceFilter, setShowPriceFilter] = useState(false);
   const [showDiscountFilter, setShowDiscountFilter] = useState(false);
 
-  // Filters state (used now in local filtering)  
-  const [filters, setFilters] = useState({
+  // Persisted filters state (loaded from localStorage if available)
+  const defaultFilters = {
     genderFilter: [],
     categoryFilter: [],
     brandFilter: [],
     ageFilter: [],
     sizeFilter: [],
     colorFilter: [],
-    // priceRangeFilter is an array of objects: { label, min, max }
     priceRangeFilter: [],
     priceInput: { min: "", max: "" },
     discountFilter: [],
     sortType: "relevant",
     search: "",
+  };
+  const [filters, setFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem("collectionFilters");
+      return saved ? JSON.parse(saved) : defaultFilters;
+    } catch {
+      return defaultFilters;
+    }
   });
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem("collectionFilters", JSON.stringify(filters));
+    } catch {
+      // ignore write errors (e.g. storage full)
+    }
+  }, [filters]);
 
   // Global search state.
   const [searchTerm, setSearchTerm] = useState("");
@@ -112,55 +138,98 @@ const Collection = () => {
   }, []);
 
   // Build distinct filter options.
-  const uniqueGenders = Array.from(new Set(allProducts.map((item) => item.category)));
-  const uniqueCategories = Array.from(new Set(allProducts.map((item) => item.subCategory)));
-  const uniqueBrands = Array.from(new Set(allProducts.map((item) => item.name))).filter(Boolean);
+  // Replace your current uniqueGenders with:
+// Corrected filter implementations without syntax errors
+const uniqueGenders = Array.from(new Set(allProducts.map(item => item.category)))
+  .filter(Boolean)
+  .sort((a, b) => a.localeCompare(b));
 
-  const uniqueAges = Array.from(
-    new Set(
-      allProducts.flatMap((item) =>
-        item.variants
-          ? item.variants
-              .map((v) => (v.age ? `${v.age} ${v.ageUnit}`.trim() : null))
-              .filter(Boolean)
-          : []
-      )
-    )
-  );
-  const uniqueSizes = Array.from(
-    new Set(
-      allProducts.flatMap((item) =>
-        item.variants ? item.variants.map((v) => v.size).filter(Boolean) : []
-      )
-    )
-  );
-  const uniqueColors = Array.from(
-    new Set(
-      allProducts.flatMap((item) =>
-        item.variants ? item.variants.map((v) => v.color).filter(Boolean) : []
-      )
-    )
-  );
+const uniqueCategories = Array.from(new Set(allProducts.map(item => item.subCategory)))
+  .filter(Boolean)
+  .sort((a, b) => a.localeCompare(b));
 
-  // Fixed price range options.
-  const priceRanges = [
-    { label: "Below 250", min: 0, max: 250 },
-    { label: "250 to 500", min: 250, max: 500 },
-    { label: "500 to 750", min: 500, max: 750 },
-    { label: "750 to 1000", min: 750, max: 1000 },
-  ];
-  const maxProductPrice = allProducts.length > 0 ? Math.max(...allProducts.map((item) => item.price)) : 0;
-  if (maxProductPrice >= 1000) {
-    priceRanges.push({ label: "Above 1000", min: 1000 });
-  }
+const uniqueBrands = Array.from(new Set(allProducts.map(item => item.name)))
+  .filter(Boolean)
+  .sort((a, b) => a.localeCompare(b));
 
-  const discountRanges = [
-    { label: "0-20%", min: 0, max: 20 },
-    { label: "20-40%", min: 20, max: 40 },
-    { label: "40-60%", min: 40, max: 60 },
-    { label: "60-80%", min: 60, max: 80 },
-    { label: "80-100%", min: 80, max: 100 },
-  ];
+const uniqueAges = Array.from(
+  new Set(
+    allProducts.flatMap(item => 
+      (item.variants || [])
+        .map(v => v.age ? `${v.age} ${v.ageUnit}`.trim() : null)
+        .filter(Boolean)
+    )
+  )
+).sort((a, b) => {
+  const [aNum, aUnit] = a.split(' ');
+  const [bNum, bUnit] = b.split(' ');
+  
+  // Convert months to years for comparison if needed
+  const aValue = aUnit === 'Months' ? parseFloat(aNum)/12 : parseFloat(aNum);
+  const bValue = bUnit === 'Months' ? parseFloat(bNum)/12 : parseFloat(bNum);
+  
+  return aValue - bValue;
+});
+
+const uniqueSizes = Array.from(
+  new Set(
+    allProducts.flatMap(item => 
+      (item.variants || [])
+        .map(v => v.size)
+        .filter(Boolean)
+        .map(size => size.toString().toUpperCase())
+    )
+  )
+).sort((a, b) => {
+  // Handle numeric sizes (e.g., shoe sizes)
+  if (!isNaN(a)) return parseFloat(a) - parseFloat(b);
+  
+  // Handle standard clothing sizes
+  const sizeOrder = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+  const aIndex = sizeOrder.indexOf(a);
+  const bIndex = sizeOrder.indexOf(b);
+  
+  // If both are standard sizes, compare their order
+  if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+  
+  // If one is standard and one isn't, standard comes first
+  if (aIndex !== -1) return -1;
+  if (bIndex !== -1) return 1;
+  
+  // Fallback to alphabetical
+  return a.localeCompare(b);
+});
+
+const uniqueColors = Array.from(
+  new Set(
+    allProducts.flatMap(item => 
+      (item.variants || [])
+        .map(v => v.color)
+        .filter(Boolean)
+        .map(color => color.charAt(0).toUpperCase() + color.slice(1).toLowerCase())
+    )
+  )
+).sort((a, b) => a.localeCompare(b));
+
+// Price ranges (already ordered)
+const priceRanges = [
+  { label: "Below 250", min: 0, max: 250 },
+  { label: "250 to 500", min: 250, max: 500 },
+  { label: "500 to 750", min: 500, max: 750 },
+  { label: "750 to 1000", min: 750, max: 1000 },
+];
+const maxProductPrice = allProducts.length > 0 ? Math.max(...allProducts.map((item) => item.price)) : 0;
+if (maxProductPrice >= 1000) {
+  priceRanges.push({ label: "Above 1000", min: 1000 });
+}
+// Discount ranges (already ordered)
+const discountRanges = [
+  { label: "0-20%", min: 0, max: 20 },
+  { label: "20-40%", min: 20, max: 40 },
+  { label: "40-60%", min: 40, max: 60 },
+  { label: "60-80%", min: 60, max: 80 },
+  { label: "80-100%", min: 80, max: 100 }
+];
 
   // Custom toggleFilter: for priceRangeFilter, compare by label.
   const toggleFilter = (key, value) => {
@@ -208,9 +277,10 @@ const Collection = () => {
     });
   };
 
-  // Compute filtered products on the front end.
+  // Ensure best sellers always appear first, even after shuffle
   const filteredProducts = useMemo(() => {
-    return allProducts.filter((product) => {
+    // First, filter the products.
+    const filtered = allProducts.filter((product) => {
       let match = true;
       // Search text filter.
       if (filters.search || search) {
@@ -255,7 +325,6 @@ const Collection = () => {
       }
       // Price range filter (on discountedPrice).
       if (filters.priceRangeFilter.length > 0) {
-        // Ensure product.discountedPrice exists; if not, consider it as not matching.
         if (!product.discountedPrice) return false;
         match =
           match &&
@@ -292,22 +361,58 @@ const Collection = () => {
       }
       return match;
     });
-  }, [allProducts, filters, search]);
+
+    // Shuffle the filtered products
+    let shuffledProducts = shuffleArray(filtered);
+
+    const bestSellers = filtered.filter(p => p.bestseller && p.count > 0);
+  const regularProducts = filtered.filter(p => !p.bestseller && p.count > 0);
+  const outOfStockProducts = filtered.filter(p => p.count === 0);
+
+  // Apply sorting based on the selected sortType
+  const sortProducts = (products) => {
+    switch (filters.sortType) {
+      case 'low-high':
+        return [...products].sort((a, b) => (a.discountedPrice || a.price) - (b.discountedPrice || b.price));
+      case 'high-low':
+        return [...products].sort((a, b) => (b.discountedPrice || b.price) - (a.discountedPrice || a.price));
+      case 'relevant':
+      default:
+        // For relevant, shuffle within groups but keep bestsellers first
+        return shuffleArray(products);
+    }
+  };
+
+  // Apply sorting to each group
+  const sortedBestSellers = sortProducts(bestSellers);
+  const sortedRegularProducts = sortProducts(regularProducts);
+  const sortedOutOfStock = outOfStockProducts; // Don't sort out of stock items
+
+  return [
+    ...sortedBestSellers,
+    ...sortedRegularProducts,
+    ...sortedOutOfStock
+  ];
+}, [allProducts, filters, search]);
 
   useEffect(() => {
     setProducts(filteredProducts);
   }, [filteredProducts]);
-
-  // Build the filter panel content.
   const filterContent = (
     <div className="space-y-6">
       {/* GENDER Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowGenderFilter(!showGenderFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowGenderFilter(!showGenderFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             GENDER
           </button>
-          <button onClick={() => setShowGenderFilter(!showGenderFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowGenderFilter(!showGenderFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showGenderFilter ? "–" : "+"}
           </button>
         </div>
@@ -323,7 +428,8 @@ const Collection = () => {
                     onChange={() => toggleFilter("genderFilter", g)}
                     checked={filters.genderFilter.includes(g)}
                   />
-                  {g} ({allProducts.filter((item) => item.category === g).length})
+                  {g} (
+                  {allProducts.filter((item) => item.category === g).length})
                 </label>
               ))}
             </div>
@@ -333,10 +439,16 @@ const Collection = () => {
       {/* CATEGORY Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowCategoryFilter(!showCategoryFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             CATEGORY
           </button>
-          <button onClick={() => setShowCategoryFilter(!showCategoryFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showCategoryFilter ? "–" : "+"}
           </button>
         </div>
@@ -352,7 +464,12 @@ const Collection = () => {
                     onChange={() => toggleFilter("categoryFilter", cat)}
                     checked={filters.categoryFilter.includes(cat)}
                   />
-                  {cat} ({allProducts.filter((item) => item.subCategory === cat).length})
+                  {cat} (
+                  {
+                    allProducts.filter((item) => item.subCategory === cat)
+                      .length
+                  }
+                  )
                 </label>
               ))}
             </div>
@@ -362,10 +479,16 @@ const Collection = () => {
       {/* BRAND Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowBrandFilter(!showBrandFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowBrandFilter(!showBrandFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             BRAND
           </button>
-          <button onClick={() => setShowBrandFilter(!showBrandFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowBrandFilter(!showBrandFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showBrandFilter ? "–" : "+"}
           </button>
         </div>
@@ -381,7 +504,8 @@ const Collection = () => {
                     onChange={() => toggleFilter("brandFilter", brand)}
                     checked={filters.brandFilter.includes(brand)}
                   />
-                  {brand} ({allProducts.filter((item) => item.name === brand).length})
+                  {brand} (
+                  {allProducts.filter((item) => item.name === brand).length})
                 </label>
               ))}
             </div>
@@ -391,10 +515,16 @@ const Collection = () => {
       {/* AGE Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowAgeFilter(!showAgeFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowAgeFilter(!showAgeFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             AGE
           </button>
-          <button onClick={() => setShowAgeFilter(!showAgeFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowAgeFilter(!showAgeFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showAgeFilter ? "–" : "+"}
           </button>
         </div>
@@ -416,7 +546,8 @@ const Collection = () => {
                       (item) =>
                         item.variants &&
                         item.variants.some(
-                          (v) => v.age && `${v.age} ${v.ageUnit}`.trim() === ageLabel
+                          (v) =>
+                            v.age && `${v.age} ${v.ageUnit}`.trim() === ageLabel
                         )
                     ).length
                   }
@@ -430,10 +561,16 @@ const Collection = () => {
       {/* SIZE Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowSizeFilter(!showSizeFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowSizeFilter(!showSizeFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             SIZE
           </button>
-          <button onClick={() => setShowSizeFilter(!showSizeFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowSizeFilter(!showSizeFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showSizeFilter ? "–" : "+"}
           </button>
         </div>
@@ -467,10 +604,16 @@ const Collection = () => {
       {/* COLOR Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowColorFilter(!showColorFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowColorFilter(!showColorFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             COLOR
           </button>
-          <button onClick={() => setShowColorFilter(!showColorFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowColorFilter(!showColorFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showColorFilter ? "–" : "+"}
           </button>
         </div>
@@ -504,10 +647,16 @@ const Collection = () => {
       {/* PRICE Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowPriceFilter(!showPriceFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowPriceFilter(!showPriceFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             PRICE
           </button>
-          <button onClick={() => setShowPriceFilter(!showPriceFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowPriceFilter(!showPriceFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showPriceFilter ? "–" : "+"}
           </button>
         </div>
@@ -520,14 +669,19 @@ const Collection = () => {
                     type="checkbox"
                     className="w-4 h-4 accent-gray-600"
                     onChange={() => toggleFilter("priceRangeFilter", range)}
-                    checked={filters.priceRangeFilter.some((r) => r.label === range.label)}
+                    checked={filters.priceRangeFilter.some(
+                      (r) => r.label === range.label
+                    )}
                   />
                   {range.label} (
                   {
                     allProducts.filter((item) => {
                       if (!item.discountedPrice) return false;
                       if (range.max) {
-                        return item.discountedPrice >= range.min && item.discountedPrice < range.max;
+                        return (
+                          item.discountedPrice >= range.min &&
+                          item.discountedPrice < range.max
+                        );
                       } else {
                         return item.discountedPrice >= range.min;
                       }
@@ -559,10 +713,16 @@ const Collection = () => {
       {/* DISCOUNT Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
-          <button onClick={() => setShowDiscountFilter(!showDiscountFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowDiscountFilter(!showDiscountFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             DISCOUNT
           </button>
-          <button onClick={() => setShowDiscountFilter(!showDiscountFilter)} className="text-2xl font-semibold text-gray-800">
+          <button
+            onClick={() => setShowDiscountFilter(!showDiscountFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
             {showDiscountFilter ? "–" : "+"}
           </button>
         </div>
@@ -584,7 +744,10 @@ const Collection = () => {
                       const discountPercent = Math.round(
                         ((item.price - item.discountedPrice) / item.price) * 100
                       );
-                      return discountPercent >= range.min && discountPercent < range.max;
+                      return (
+                        discountPercent >= range.min &&
+                        discountPercent < range.max
+                      );
                     }).length
                   }
                   )
@@ -596,25 +759,45 @@ const Collection = () => {
       </div>
     </div>
   );
+ 
 
   return (
     <div className="relative">
-      <div className={`max-w-7xl mx-auto px-0 py-6 ${isFiltering ? "blur-sm" : ""}`}>
+      <div
+        className={`max-w-7xl mx-auto px-0 py-6 ${
+          isFiltering ? "blur-sm" : ""
+        }`}
+      >
         <div className="sm:hidden mb-6">
           <h1 className="text-xl font-bold text-center">All Collections</h1>
         </div>
         <div className="sm:hidden mb-4 flex items-center justify-between">
           <button
             onClick={() => setShowMobileFilter(true)}
-            className={`px-4 py-2 rounded-md flex items-center gap-2 ${showMobileFilter ? "bg-transparent" : "bg-gray-800 text-white"}`}
+            className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+              showMobileFilter ? "bg-transparent" : "bg-gray-800 text-white"
+            }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V20a1 1 0 01-1.447.894l-4-2A1 1 0 009 18v-4.586L3.293 6.707A1 1 0 013 6V4z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V20a1 1 0 01-1.447.894l-4-2A1 1 0 009 18v-4.586L3.293 6.707A1 1 0 013 6V4z"
+              />
             </svg>
             Filters
           </button>
           <select
-            onChange={(e) => setFilters((prev) => ({ ...prev, sortType: e.target.value }))}
+            onChange={(e) =>
+              setFilters((prev) => ({ ...prev, sortType: e.target.value }))
+            }
             className="border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             <option value="relevant">Sort by: Relevant</option>
@@ -628,7 +811,9 @@ const Collection = () => {
             <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between mb-3">
               <Title text1="ALL" text2="COLLECTIONS" />
               <select
-                onChange={(e) => setFilters((prev) => ({ ...prev, sortType: e.target.value }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, sortType: e.target.value }))
+                }
                 className="mt-4 sm:mt-0 border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="relevant">Sort by: Relevant</option>
@@ -715,7 +900,10 @@ const Collection = () => {
                     <span
                       className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm cursor-pointer"
                       onClick={() =>
-                        setFilters((prev) => ({ ...prev, priceInput: { ...prev.priceInput, min: "" } }))
+                        setFilters((prev) => ({
+                          ...prev,
+                          priceInput: { ...prev.priceInput, min: "" },
+                        }))
                       }
                     >
                       Min: {filters.priceInput.min} &times;
@@ -725,7 +913,10 @@ const Collection = () => {
                     <span
                       className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm cursor-pointer"
                       onClick={() =>
-                        setFilters((prev) => ({ ...prev, priceInput: { ...prev.priceInput, max: "" } }))
+                        setFilters((prev) => ({
+                          ...prev,
+                          priceInput: { ...prev.priceInput, max: "" },
+                        }))
                       }
                     >
                       Max: {filters.priceInput.max} &times;
@@ -746,7 +937,9 @@ const Collection = () => {
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.length > 0 ? (
                 products.map((item, index) => {
-                  const img = Array.isArray(item.image) ? item.image[0] : item.image;
+                  const img = Array.isArray(item.image)
+                    ? item.image[0]
+                    : item.image;
                   return (
                     <ProductCard
                       key={item._id || index}
@@ -760,6 +953,7 @@ const Collection = () => {
                       ages={item.ages}
                       count={item.count}
                       color={item.color}
+                      bestseller={item.bestseller}
                     />
                   );
                 })
@@ -803,7 +997,10 @@ const Collection = () => {
           <div className="bg-white w-full max-w-md rounded-lg shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b pb-3 mb-4">
               <h2 className="text-2xl font-bold">Filters</h2>
-              <button onClick={() => setShowMobileFilter(false)} className="text-2xl font-bold text-red-500 hover:text-red-700">
+              <button
+                onClick={() => setShowMobileFilter(false)}
+                className="text-2xl font-bold text-red-500 hover:text-red-700"
+              >
                 &#10005;
               </button>
             </div>

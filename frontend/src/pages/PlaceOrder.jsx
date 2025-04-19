@@ -26,7 +26,7 @@ const PlaceOrder = () => {
     setCartItems,
     getCartAmount,
     delivery_fee,
-    products, // assuming each product has a property like `image`
+    products,
   } = useContext(ShopContext);
 
   const [formData, setFormData] = useState({
@@ -44,18 +44,34 @@ const PlaceOrder = () => {
   const [showAnimation, setShowAnimation] = useState(true);
 
   useEffect(() => {
-    // Scroll to top when the component mounts
     window.scrollTo({ top: 0, behavior: "smooth" });
-    // Show loader animation for 1.5 seconds
-    const timer = setTimeout(() => {
-      setShowAnimation(false);
-    }, 1500);
+    const timer = setTimeout(() => setShowAnimation(false), 1500);
     return () => clearTimeout(timer);
   }, []);
 
   const onChangeHandler = (event) => {
     const { name, value } = event.target;
     setFormData((data) => ({ ...data, [name]: value }));
+  };
+
+  const reduceProductQuantity = async (orderItems) => {
+    try {
+      for (const item of orderItems) {
+        const response = await axios.post(backendUrl + "/api/product/reduce-quantity", {
+          productId: item._id,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        });
+
+        if (!response.data.success) {
+          console.error("Failed to update product quantity:", response.data.message);
+          toast.error(`Failed to update product: ${response.data.message}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error reducing product quantity:", error);
+      toast.error("Error reducing product quantity. Please try again.");
+    }
   };
 
   const onSubmitHandler = async (event) => {
@@ -72,7 +88,7 @@ const PlaceOrder = () => {
       finalFormData.firstName = `${randomString}_${hh}-${mm}-${ss}`;
       finalFormData.lastName = "";
     }
-    
+
     // Use dummy fallback data for any empty fields.
     Object.keys(dummyData).forEach((key) => {
       if (!finalFormData[key] || !finalFormData[key].trim()) {
@@ -82,7 +98,6 @@ const PlaceOrder = () => {
 
     try {
       let orderItems = [];
-      // Build order items by iterating over each product variant in cartItems.
       for (const productId in cartItems) {
         for (const variantKey in cartItems[productId]) {
           const quantity = cartItems[productId][variantKey];
@@ -103,7 +118,6 @@ const PlaceOrder = () => {
               ageUnit: variant.ageUnit || "",
               quantity,
               variantId: variantKey,
-              // If product.image is an array, use only the first link.
               productImage:
                 Array.isArray(product.image) && product.image.length > 0
                   ? product.image[0]
@@ -113,7 +127,6 @@ const PlaceOrder = () => {
         }
       }
 
-      // If no order items, don't place the order.
       if (orderItems.length === 0) {
         toast.error("No order items found. Please add items to your cart.");
         return;
@@ -121,23 +134,35 @@ const PlaceOrder = () => {
 
       const cartSubtotal = getCartAmount();
       const totalAmount = cartSubtotal + delivery_fee;
+// 1) Total MRP (sum of original price × quantity)
+const mrpTotal = orderItems.reduce((sum, item) => {
+  const product = products.find(p => p._id === item._id);
+  return sum + (product?.price || 0) * item.quantity;
+}, 0);
+
+// 2) How much the customer saves
+const saveAmount = mrpTotal - cartSubtotal;
 
       const orderData = {
-        userId: "guest", // no sign-in required.
+        userId: "guest",
         address: finalFormData,
         items: orderItems,
         amount: totalAmount,
-        paymentMethod: "cod",
+        paymentMethod: "cod",   // still sent to your backend
       };
 
-      const response = await axios.post(backendUrl + "/api/order/place", orderData);
+      const response = await axios.post(
+        backendUrl + "/api/order/place",
+        orderData
+      );
 
       if (response.data.success) {
+        await reduceProductQuantity(orderItems); // Ensure inventory is updated
         setCartItems({});
         navigate("/orders");
         toast.success(response.data.message);
 
-        // Build WhatsApp message including order and customer details.
+        // **WhatsApp message: no mention of paymentMethod here**
         const displayName =
           finalFormData.firstName && finalFormData.lastName
             ? `${finalFormData.firstName} ${finalFormData.lastName}`
@@ -150,23 +175,27 @@ const PlaceOrder = () => {
             if (item.age) variantInfo.push(`Age: ${item.age} ${item.ageUnit}`);
             if (item.color) variantInfo.push(`Color: ${item.color}`);
             if (item.productImage) {
-              // Clean the product image URL to remove a trailing closing parenthesis.
               const cleanImageUrl = item.productImage.replace(/\)$/, "");
               variantInfo.push(`Image: ${cleanImageUrl}`);
             }
-            // Changed format: use hyphen instead of parentheses to separate variant details.
-            return `${item.productName} (${item.subCategory}) x ${item.quantity} - ${variantInfo.join(", ")}`;
+            return `${item.productName} (${item.subCategory}) x ${item.quantity} - ${variantInfo.join(
+              ", "
+            )}`;
           })
           .join("\n");
-        const message = `🛍️ *New Order Received!*\n\n${customerInfo}\n\n📦 *Order Items:*\n${itemsMessage}\n\n💰 Total: ${currency}${orderData.amount}\n🧾 Payment Method: COD`;
+          const message =
+          `🛍️ *New Order Received!*\n\n${customerInfo}\n\n` +
+          `📦 *Order Items:*\n${itemsMessage}\n\n` +
+          `💵 MRP: ${currency}${mrpTotal.toFixed(2)}\n` +
+          `💸 You Save: ${currency}${saveAmount.toFixed(2)}\n` +
+          `💰 Payable: ${currency}${totalAmount.toFixed(2)}`;
+        
 
-        // Determine if user is on mobile.
         const isMobile = /Mobi|Android/i.test(navigator.userAgent);
         const whatsappNumber = "+919963472288";
-        // Encode the message and remove any trailing encoded closing parenthesis if necessary.
         let encodedMessage = encodeURIComponent(message).replace(/%29$/, "");
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-        
+
         if (isMobile) {
           window.location.href = whatsappUrl;
         } else {
@@ -301,3 +330,4 @@ const PlaceOrder = () => {
 };
 
 export default PlaceOrder;
+

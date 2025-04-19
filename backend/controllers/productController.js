@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import productModel from "../models/productModel.js";
 
+// Aggregate variant options (size, age, etc.)
 const aggregateVariantOptions = (variants) => {
   if (!variants || !Array.isArray(variants)) return [];
   const options = variants
@@ -16,6 +17,7 @@ const aggregateVariantOptions = (variants) => {
   return Array.from(new Set(options));
 };
 
+// List filtered products (available and out-of-stock)
 const listFilteredProducts = async (req, res) => {
   try {
     const {
@@ -31,37 +33,53 @@ const listFilteredProducts = async (req, res) => {
       sortType,
     } = req.body;
 
-    let query = { count: { $gt: 0 } };
+    let query = {}; // To handle both available and out-of-stock queries
 
+    // Add search and other filters to the query
     if (search) {
       query.name = { $regex: search, $options: "i" };
     }
     if (genderFilter && genderFilter.length > 0) {
-      query.category = { $in: genderFilter };
+      query.category = { $in: genderFilter.sort((a, b) => a.localeCompare(b)) }; // Sort gender filter alphabetically
     }
     if (categoryFilter && categoryFilter.length > 0) {
-      query.subCategory = { $in: categoryFilter };
+      query.subCategory = {
+        $in: categoryFilter.sort((a, b) => a.localeCompare(b)),
+      }; // Sort category filter alphabetically
     }
 
     const variantFilters = [];
     if (ageFilter && ageFilter.length > 0) {
-      // Updated: use regex comparison for age and ageUnit (treat age as string)
-      const ageConditions = ageFilter.map((item) => {
+      // Sort age filter: months first, then years
+      const sortedAgeFilter = ageFilter.sort((a, b) => {
+        const [aValue, aUnit] = a.split(" ");
+        const [bValue, bUnit] = b.split(" ");
+
+        if (aUnit === "months" && bUnit === "years") return -1;
+        if (aUnit === "years" && bUnit === "months") return 1;
+        return parseInt(aValue) - parseInt(bValue);
+      });
+
+      const ageConditions = sortedAgeFilter.map((item) => {
         const parts = item.split(" ");
         const ageValue = parts[0].trim();
         const ageUnit = parts[1] ? parts[1].trim() : "";
         return {
           age: { $regex: `^${ageValue}$`, $options: "i" },
-          ageUnit: { $regex: `^${ageUnit}$`, $options: "i" }
+          ageUnit: { $regex: `^${ageUnit}$`, $options: "i" },
         };
       });
       variantFilters.push({ $or: ageConditions });
     }
     if (sizeFilter && sizeFilter.length > 0) {
-      variantFilters.push({ size: { $in: sizeFilter } });
+      variantFilters.push({
+        size: { $in: sizeFilter.sort((a, b) => a.localeCompare(b)) },
+      }); // Sort size filter alphabetically
     }
     if (colorFilter && colorFilter.length > 0) {
-      variantFilters.push({ color: { $in: colorFilter } });
+      variantFilters.push({
+        color: { $in: colorFilter.sort((a, b) => a.localeCompare(b)) },
+      }); // Sort color filter alphabetically
     }
     if (variantFilters.length > 0) {
       query["variants"] = { $elemMatch: { $or: variantFilters } };
@@ -97,6 +115,7 @@ const listFilteredProducts = async (req, res) => {
 
     let products = await productModel.find(query).lean();
 
+    // Apply discount filter
     if (discountFilter && discountFilter.length > 0) {
       const discountRanges = [
         { label: "0-20%", min: 0, max: 20 },
@@ -117,37 +136,39 @@ const listFilteredProducts = async (req, res) => {
       });
     }
 
+    // Sort products based on selected sortType
+    // In listFilteredProducts function, modify the sorting logic:
     let sort = {};
     if (sortType === "low-high") {
       sort.price = 1;
     } else if (sortType === "high-low") {
       sort.price = -1;
     } else {
-      sort.date = -1;
-    }
-    if (!(discountFilter && discountFilter.length > 0)) {
-      products = await productModel.find(query).sort(sort).lean();
-    } else {
-      products = products.sort((a, b) => {
-        if (sort.price) {
-          return sort.price === 1 ? a.price - b.price : b.price - a.price;
-        } else {
-          return b.date - a.date;
-        }
-      });
+      // Default sorting: bestsellers first, then by date
+      sort = { bestseller: -1, date: -1 };
     }
 
+    products = await productModel.find(query).sort(sort).lean();
+
+    // Aggregate variants and add them to products
     products = products.map((product) => {
       product.ages = aggregateVariantOptions(product.variants);
       return product;
     });
 
-    return res.json({ success: true, products });
+    // Separate available and out-of-stock products
+    const availableProducts = products.filter((product) => product.count > 0);
+    const outOfStockProducts = products.filter(
+      (product) => product.count === 0
+    );
+
+    return res.json({ success: true, availableProducts, outOfStockProducts });
   } catch (error) {
     return res.json({ success: false, message: error.message });
   }
 };
 
+// Add product
 const addProduct = async (req, res) => {
   try {
     const {
@@ -190,7 +211,7 @@ const addProduct = async (req, res) => {
       variants: parsedVariants,
       bestseller: bestseller === "true",
       image: imagesUrl,
-      count: count ? Number(count) : undefined,
+      count: count ? Number(count) : 0, // Default to 0 for new products
       date: Date.now(),
     };
     const product = new productModel(productData);
@@ -201,6 +222,7 @@ const addProduct = async (req, res) => {
   }
 };
 
+// Update product
 const updateProduct = async (req, res) => {
   try {
     const {
@@ -228,7 +250,7 @@ const updateProduct = async (req, res) => {
       subCategory,
       variants: parsedVariants,
       bestseller: bestseller === "true",
-      count: count ? Number(count) : undefined,
+      count: count ? Number(count) : 0, // Ensure count is updated
     };
     await productModel.findByIdAndUpdate(productId, updateData);
     return res.json({ success: true, message: "Product updated successfully" });
@@ -237,12 +259,10 @@ const updateProduct = async (req, res) => {
   }
 };
 
+// List all products
 const listProducts = async (req, res) => {
   try {
-    let products = await productModel
-      .find({ count: { $gt: 0 } })
-      .sort({ date: -1 })
-      .lean();
+    let products = await productModel.find({}).sort({ date: -1 }).lean();
     products = products.map((product) => {
       product.ages = aggregateVariantOptions(product.variants);
       return product;
@@ -253,6 +273,7 @@ const listProducts = async (req, res) => {
   }
 };
 
+// Remove product
 const removeProduct = async (req, res) => {
   try {
     await productModel.findByIdAndDelete(req.body.id);
@@ -262,6 +283,7 @@ const removeProduct = async (req, res) => {
   }
 };
 
+// Get a single product by ID
 const singleProduct = async (req, res) => {
   try {
     const { productId } = req.body;
@@ -275,6 +297,7 @@ const singleProduct = async (req, res) => {
   }
 };
 
+// Get subcategories
 const getSubCategories = async (req, res) => {
   try {
     const subCategories = await productModel.distinct("subCategory");
@@ -284,6 +307,7 @@ const getSubCategories = async (req, res) => {
   }
 };
 
+// Get brands
 const getBrands = async (req, res) => {
   try {
     const brands = await productModel.distinct("name");

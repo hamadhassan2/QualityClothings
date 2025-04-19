@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { MdAdd, MdList, MdShoppingCart } from 'react-icons/md'; // Material Design icons
+import { MdAdd, MdList, MdShoppingCart , } from 'react-icons/md'; // Material Design icons
+import { FaChartLine } from 'react-icons/fa';
 
 const Sidebar = () => {
   return (
@@ -40,6 +41,17 @@ const Sidebar = () => {
         >
           <MdShoppingCart className="w-5 h-5" />
           <p className="hidden md:block">Orders</p>
+        </NavLink>
+        <NavLink
+          to="/analytics"
+          className={({ isActive }) =>
+            `flex items-center gap-3 border border-gray-300 border-r-0 px-3 py-2 rounded-l transition-all duration-200 ${
+              isActive ? "bg-[#4b5563] text-white" : "hover:bg-gray-100"
+            }`
+          }
+        >
+          <FaChartLine className="w-5 h-5" />
+          <p className="hidden md:block">Analytics</p>
         </NavLink>
       </div>
     </div>

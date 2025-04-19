@@ -80,9 +80,11 @@ const Orders = ({ token }) => {
 
   // Filtering orders based on search, status, and date.
   const filteredOrders = orders.filter((order) => {
-    const fullName = `${order.address.firstName} ${order.address.lastName}`.toLowerCase();
+    const fullName =
+      `${order.address.firstName} ${order.address.lastName}`.toLowerCase();
     const matchesSearch = fullName.includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "All" || order.status === filterStatus;
+    const matchesStatus =
+      filterStatus === "All" || order.status === filterStatus;
     const orderDate = new Date(order.date);
     let matchesDate = true;
     if (startDate) {
@@ -144,7 +146,9 @@ const Orders = ({ token }) => {
         toast.success(response.data.message);
         setOrders((prev) =>
           prev.map((order) =>
-            order._id === orderId ? { ...order, payment: newPaymentStatus } : order
+            order._id === orderId
+              ? { ...order, payment: newPaymentStatus }
+              : order
           )
         );
       } else {
@@ -216,7 +220,16 @@ const Orders = ({ token }) => {
                 setExpandedOrder(expandedOrder === index ? null : index)
               }
             >
-             
+              <div
+                className="absolute top-3 right-3 text-red-500 hover:text-red-700 cursor-pointer z-10 "
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDelete(order._id);
+                }}
+              >
+                <FaTrash size={18} />
+              </div>
+
               {isMobile ? (
                 // Layout for Mobile
                 <div className="flex flex-col gap-4">
@@ -328,9 +341,7 @@ const Orders = ({ token }) => {
                     <div className="flex flex-col gap-2 w-full">
                       <select
                         onClick={(e) => e.stopPropagation()}
-                        onChange={(event) =>
-                          statusHandler(event, order._id)
-                        }
+                        onChange={(event) => statusHandler(event, order._id)}
                         value={order.status}
                         className={`w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 hover:border-gray-400 ${
                           order.status === "Cancelled" ? "text-red-600" : ""
@@ -339,7 +350,9 @@ const Orders = ({ token }) => {
                         <option value="Order Placed">Order Placed</option>
                         <option value="Packing">Packing</option>
                         <option value="Shipped">Shipped</option>
-                        <option value="Out for delivery">Out for delivery</option>
+                        <option value="Out for delivery">
+                          Out for delivery
+                        </option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
@@ -417,7 +430,8 @@ const Orders = ({ token }) => {
                                     <span
                                       className="inline-block w-3 h-3 rounded-full border border-gray-300"
                                       style={{
-                                        backgroundColor: item.color.toLowerCase(),
+                                        backgroundColor:
+                                          item.color.toLowerCase(),
                                       }}
                                     ></span>
                                     <span className="ml-1 capitalize font-medium text-gray-800">
@@ -468,9 +482,7 @@ const Orders = ({ token }) => {
                     <div className="flex flex-col gap-2 w-full">
                       <select
                         onClick={(e) => e.stopPropagation()}
-                        onChange={(event) =>
-                          statusHandler(event, order._id)
-                        }
+                        onChange={(event) => statusHandler(event, order._id)}
                         value={order.status}
                         className={`w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400 hover:border-gray-400 ${
                           order.status === "Cancelled" ? "text-red-600" : ""
@@ -479,7 +491,9 @@ const Orders = ({ token }) => {
                         <option value="Order Placed">Order Placed</option>
                         <option value="Packing">Packing</option>
                         <option value="Shipped">Shipped</option>
-                        <option value="Out for delivery">Out for delivery</option>
+                        <option value="Out for delivery">
+                          Out for delivery
+                        </option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
