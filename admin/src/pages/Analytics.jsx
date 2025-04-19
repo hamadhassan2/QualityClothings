@@ -160,7 +160,8 @@ const Analytics = () => {
       </div>
 
       {/* Date Filters */}
-      <div className="flex flex-row sm:flex-row gap-4 items-end justify-end">
+      <div className="flex flex-col sm:flex-row gap-4 items-end justify-end">
+       <div className="flex flex-row sm:flex-row ">
         <div>
           <label className="block text-sm font-medium text-gray-700">Start Date</label>
           <input
@@ -178,6 +179,7 @@ const Analytics = () => {
             onChange={e => setEndDate(e.target.value)}
             className="mt-1 w-full border-gray-300 rounded-md shadow-sm"
           />
+        </div>
         </div>
         <button
           onClick={() => { setStartDate(""); setEndDate(""); }}
