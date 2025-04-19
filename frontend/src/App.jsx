@@ -31,12 +31,12 @@ const App = () => {
     return () => clearTimeout(t);
   }, []);
 
-  // 2) first‑time visitor redirect
+
   useEffect(() => {
     const hasVisited = localStorage.getItem("hasVisited");
     if (!hasVisited) {
       localStorage.setItem("hasVisited", "true");
-      // replace so back‑button doesn’t send them back to “we just redirected”
+      
       navigate("/collection", { replace: true });
     }
   }, [navigate]);
