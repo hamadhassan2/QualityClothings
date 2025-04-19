@@ -20,7 +20,7 @@ const Navbar = () => {
         {/* Left Column: Logo */}
         <div className="flex-1">
           <Link 
-            to="/" 
+            to="/collection" 
             onClick={() => setVisible(false)} // Close sidebar when logo is clicked
           >
             <img src='/updatedlogo.png' className="w-36" alt="Company Logo" />
