@@ -8,6 +8,7 @@ const ProductCard = ({
   id,
   img,
   name,
+  subCategory,
   price,
   discountedPrice,
   count,
@@ -15,8 +16,7 @@ const ProductCard = ({
 }) => {
   const navigate = useNavigate();
 
-  // Debug: confirm the value of the prop
-  console.log("🚩 ProductCard – bestseller flag for", name, "is", bestseller);
+ 
 
   const discountPercent =
     discountedPrice && price
@@ -105,6 +105,9 @@ const ProductCard = ({
           >
             {name}
           </h2>
+          {subCategory && (
+            <p className="text-sm  text-gray-700 font-bold mt-1">{subCategory}</p>
+          )}
 
           {/* price row */}
           <div className="mt-2 flex items-center gap-3">
