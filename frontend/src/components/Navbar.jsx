@@ -15,7 +15,7 @@ const Navbar = () => {
   return (
     <>
       <nav className="bg-white sticky top-[42px] z-20 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:pl-2 lg:pr-8 py-4 flex items-center">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:pl-2 lg:pr-8 py-2 flex items-center">
           {/* Left Column: Logo */}
           <div className="flex-1">
             <Link to="/collection" onClick={() => setVisible(false)}>

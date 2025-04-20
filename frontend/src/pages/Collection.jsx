@@ -769,10 +769,10 @@ const discountRanges = [
         }`}
       >
         <div className="sm:hidden mb-6">
-          <h1 className="text-xl font-bold text-center ">Al Collections</h1>
+          <h1 className="text-xl font-bold text-center ">All Collections</h1>
         </div>
         {/*<div className="sm:hidden mb-4 flex items-center justify-between">*/}
-        <div className="sm:hidden sticky top-32 z-40 bg-white mb-4 flex items-center justify-between shadow-sm">
+        <div className="sm:hidden sticky top-[124px] z-40 bg-white mb-4 flex items-center justify-between shadow-sm">
           <button
             onClick={() => setShowMobileFilter(true)}
             className={`px-4 py-2 rounded-md flex items-center gap-2 ${
@@ -810,7 +810,7 @@ const discountRanges = [
           {/* <div className="hidden sm:block min-w-[180px]">{filterContent}</div> */}
           <div className="hidden sm:block min-w-[180px] sticky top-36 self-start">{filterContent}</div>
           <div className="flex-1 relative">
-            <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between mb-3 sticky top-[140px] z-40 bg-white py-2 bg-white">
+            <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between mb-3 sticky top-[124px] z-40 bg-white py-2 bg-white">
               <Title text1="ALL" text2="COLLECTIONS" />
               <select
                 onChange={(e) =>
