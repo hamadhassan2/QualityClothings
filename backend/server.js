@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
 import dotenv from "dotenv";
 import connectDB from "./config/mongoodb.js";
 import connectCloudinary from "./config/cloudinary.js";
@@ -19,7 +20,7 @@ connectCloudinary();
 // Middlewares
 app.use(express.json());
 app.use(cors());
-
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 // API Routes & End Points
 app.use("/api/user",userRouter);
 app.use("/api/product",productRouter);

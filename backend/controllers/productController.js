@@ -182,25 +182,21 @@ const addProduct = async (req, res) => {
       bestseller,
       count,
     } = req.body;
+
     const image1 = req.files.image1 && req.files.image1[0];
     const image2 = req.files.image2 && req.files.image2[0];
     const image3 = req.files.image3 && req.files.image3[0];
     const image4 = req.files.image4 && req.files.image4[0];
-    const images = [image1, image2, image3, image4].filter(
-      (item) => item !== undefined
-    );
-    const imagesUrl = await Promise.all(
-      images.map(async (item) => {
-        const result = await cloudinary.uploader.upload(item.path, {
-          resource_type: "image",
-        });
-        return result.secure_url;
-      })
-    );
+
+    const images = [image1, image2, image3, image4].filter(Boolean);
+
+    const imagesUrl = images.map((item) => `/uploads/${item.filename}`);
+
     let parsedVariants = variants;
     if (typeof variants === "string") {
       parsedVariants = JSON.parse(variants);
     }
+
     const productData = {
       name,
       price: Number(price),
@@ -211,9 +207,10 @@ const addProduct = async (req, res) => {
       variants: parsedVariants,
       bestseller: bestseller === "true",
       image: imagesUrl,
-      count: count ? Number(count) : 0, // Default to 0 for new products
+      count: count ? Number(count) : 0,
       date: Date.now(),
     };
+
     const product = new productModel(productData);
     await product.save();
     return res.json({ success: true, message: "Product added successfully" });
