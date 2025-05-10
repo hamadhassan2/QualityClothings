@@ -2,7 +2,7 @@ import axios from "axios";
 import React, { useEffect, useState, useMemo, useRef, useContext } from "react";
 import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import TextField from "@mui/material/TextField";
 import Title from "../components/Title";
@@ -11,7 +11,12 @@ import { MutatingDots } from "react-loader-spinner";
 import { ShopContext } from "../context/ShopContext";
 
 // Global search component remains unchanged
-const EnhancedSearch = ({ searchTerm, setSearchTerm, searchField, setSearchField }) => (
+const EnhancedSearch = ({
+  searchTerm,
+  setSearchTerm,
+  searchField,
+  setSearchField,
+}) => (
   <div className="flex flex-col sm:flex-row items-center">
     <select
       value={searchField}
@@ -34,10 +39,11 @@ const EnhancedSearch = ({ searchTerm, setSearchTerm, searchField, setSearchField
       value={searchTerm}
       onChange={(e) => setSearchTerm(e.target.value)}
       sx={{
-        "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
-          borderColor: "gray",
-          padding: "10px",
-        },
+        "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+          {
+            borderColor: "gray",
+            padding: "10px",
+          },
       }}
     />
   </div>
@@ -108,7 +114,7 @@ const Collection = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchField, setSearchField] = useState("name");
   const navigate = useNavigate();
-
+  const location = useLocation();
   // Helper function for age display.
   const getDisplayAge = (age) => age;
 
@@ -132,110 +138,123 @@ const Collection = () => {
 
   // Remove loader animation.
   useEffect(() => {
-    window.scrollTo(0, 0);
-    const timer = setTimeout(() => setShowAnimation(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    const timer = setTimeout(() => setShowAnimation(false), 1500)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Build distinct filter options.
   // Replace your current uniqueGenders with:
-// Corrected filter implementations without syntax errors
-const uniqueGenders = Array.from(new Set(allProducts.map(item => item.category)))
-  .filter(Boolean)
-  .sort((a, b) => a.localeCompare(b));
-
-const uniqueCategories = Array.from(new Set(allProducts.map(item => item.subCategory)))
-  .filter(Boolean)
-  .sort((a, b) => a.localeCompare(b));
-
-const uniqueBrands = Array.from(new Set(allProducts.map(item => item.name)))
-  .filter(Boolean)
-  .sort((a, b) => a.localeCompare(b));
-
-const uniqueAges = Array.from(
-  new Set(
-    allProducts.flatMap(item => 
-      (item.variants || [])
-        .map(v => v.age ? `${v.age} ${v.ageUnit}`.trim() : null)
-        .filter(Boolean)
-    )
+  // Corrected filter implementations without syntax errors
+  const uniqueGenders = Array.from(
+    new Set(allProducts.map((item) => item.category))
   )
-).sort((a, b) => {
-  const [aNum, aUnit] = a.split(' ');
-  const [bNum, bUnit] = b.split(' ');
-  
-  // Convert months to years for comparison if needed
-  const aValue = aUnit === 'Months' ? parseFloat(aNum)/12 : parseFloat(aNum);
-  const bValue = bUnit === 'Months' ? parseFloat(bNum)/12 : parseFloat(bNum);
-  
-  return aValue - bValue;
-});
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
 
-const uniqueSizes = Array.from(
-  new Set(
-    allProducts.flatMap(item => 
-      (item.variants || [])
-        .map(v => v.size)
-        .filter(Boolean)
-        .map(size => size.toString().toUpperCase())
-    )
+  const uniqueCategories = Array.from(
+    new Set(allProducts.map((item) => item.subCategory))
   )
-).sort((a, b) => {
-  // Handle numeric sizes (e.g., shoe sizes)
-  if (!isNaN(a)) return parseFloat(a) - parseFloat(b);
-  
-  // Handle standard clothing sizes
-  const sizeOrder = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-  const aIndex = sizeOrder.indexOf(a);
-  const bIndex = sizeOrder.indexOf(b);
-  
-  // If both are standard sizes, compare their order
-  if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-  
-  // If one is standard and one isn't, standard comes first
-  if (aIndex !== -1) return -1;
-  if (bIndex !== -1) return 1;
-  
-  // Fallback to alphabetical
-  return a.localeCompare(b);
-});
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
 
-const uniqueColors = Array.from(
-  new Set(
-    allProducts.flatMap(item => 
-      (item.variants || [])
-        .map(v => v.color)
-        .filter(Boolean)
-        .map(color => color.charAt(0).toUpperCase() + color.slice(1).toLowerCase())
+  const uniqueBrands = Array.from(new Set(allProducts.map((item) => item.name)))
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+
+  const uniqueAges = Array.from(
+    new Set(
+      allProducts.flatMap((item) =>
+        (item.variants || [])
+          .map((v) => (v.age ? `${v.age} ${v.ageUnit}`.trim() : null))
+          .filter(Boolean)
+      )
     )
-  )
-).sort((a, b) => a.localeCompare(b));
+  ).sort((a, b) => {
+    const [aNum, aUnit] = a.split(" ");
+    const [bNum, bUnit] = b.split(" ");
 
-// Price ranges (already ordered)
-const priceRanges = [
-  { label: "Below 250", min: 0, max: 250 },
-  { label: "250 to 500", min: 250, max: 500 },
-  { label: "500 to 750", min: 500, max: 750 },
-  { label: "750 to 1000", min: 750, max: 1000 },
-];
-const maxProductPrice = allProducts.length > 0 ? Math.max(...allProducts.map((item) => item.price)) : 0;
-if (maxProductPrice >= 1000) {
-  priceRanges.push({ label: "Above 1000", min: 1000 });
-}
-// Discount ranges (already ordered)
-const discountRanges = [
-  { label: "0-20%", min: 0, max: 20 },
-  { label: "20-40%", min: 20, max: 40 },
-  { label: "40-60%", min: 40, max: 60 },
-  { label: "60-80%", min: 60, max: 80 },
-  { label: "80-100%", min: 80, max: 100 }
-];
+    // Convert months to years for comparison if needed
+    const aValue =
+      aUnit === "Months" ? parseFloat(aNum) / 12 : parseFloat(aNum);
+    const bValue =
+      bUnit === "Months" ? parseFloat(bNum) / 12 : parseFloat(bNum);
+
+    return aValue - bValue;
+  });
+
+  const uniqueSizes = Array.from(
+    new Set(
+      allProducts.flatMap((item) =>
+        (item.variants || [])
+          .map((v) => v.size)
+          .filter(Boolean)
+          .map((size) => size.toString().toUpperCase())
+      )
+    )
+  ).sort((a, b) => {
+    // Handle numeric sizes (e.g., shoe sizes)
+    if (!isNaN(a)) return parseFloat(a) - parseFloat(b);
+
+    // Handle standard clothing sizes
+    const sizeOrder = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+    const aIndex = sizeOrder.indexOf(a);
+    const bIndex = sizeOrder.indexOf(b);
+
+    // If both are standard sizes, compare their order
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+
+    // If one is standard and one isn't, standard comes first
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+
+    // Fallback to alphabetical
+    return a.localeCompare(b);
+  });
+
+  const uniqueColors = Array.from(
+    new Set(
+      allProducts.flatMap((item) =>
+        (item.variants || [])
+          .map((v) => v.color)
+          .filter(Boolean)
+          .map(
+            (color) =>
+              color.charAt(0).toUpperCase() + color.slice(1).toLowerCase()
+          )
+      )
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  // Price ranges (already ordered)
+  const priceRanges = [
+    { label: "Below 250", min: 0, max: 250 },
+    { label: "250 to 500", min: 250, max: 500 },
+    { label: "500 to 750", min: 500, max: 750 },
+    { label: "750 to 1000", min: 750, max: 1000 },
+  ];
+  const maxProductPrice =
+    allProducts.length > 0
+      ? Math.max(...allProducts.map((item) => item.price))
+      : 0;
+  if (maxProductPrice >= 1000) {
+    priceRanges.push({ label: "Above 1000", min: 1000 });
+  }
+  // Discount ranges (already ordered)
+  const discountRanges = [
+    { label: "0-20%", min: 0, max: 20 },
+    { label: "20-40%", min: 20, max: 40 },
+    { label: "40-60%", min: 40, max: 60 },
+    { label: "60-80%", min: 60, max: 80 },
+    { label: "80-100%", min: 80, max: 100 },
+  ];
 
   // Custom toggleFilter: for priceRangeFilter, compare by label.
   const toggleFilter = (key, value) => {
     setFilters((prev) => {
       if (key === "priceRangeFilter") {
-        const exists = prev.priceRangeFilter.some((item) => item.label === value.label);
+        const exists = prev.priceRangeFilter.some(
+          (item) => item.label === value.label
+        );
         return {
           ...prev,
           priceRangeFilter: exists
@@ -267,7 +286,9 @@ const discountRanges = [
       if (filterKey === "priceRangeFilter") {
         return {
           ...prev,
-          priceRangeFilter: prev.priceRangeFilter.filter((item) => item.label !== value.label),
+          priceRangeFilter: prev.priceRangeFilter.filter(
+            (item) => item.label !== value.label
+          ),
         };
       }
       return {
@@ -330,7 +351,10 @@ const discountRanges = [
           match &&
           filters.priceRangeFilter.some((range) => {
             if (range.max) {
-              return product.discountedPrice >= range.min && product.discountedPrice < range.max;
+              return (
+                product.discountedPrice >= range.min &&
+                product.discountedPrice < range.max
+              );
             } else {
               return product.discountedPrice >= range.min;
             }
@@ -339,23 +363,37 @@ const discountRanges = [
       // Price input filter (manual min/max) on discountedPrice.
       if (filters.priceInput.min !== "" || filters.priceInput.max !== "") {
         if (!product.discountedPrice) return false;
-        const minVal = filters.priceInput.min !== "" ? Number(filters.priceInput.min) : 0;
-        const maxVal = filters.priceInput.max !== "" ? Number(filters.priceInput.max) : Infinity;
-        match = match && product.discountedPrice >= minVal && product.discountedPrice < maxVal;
+        const minVal =
+          filters.priceInput.min !== "" ? Number(filters.priceInput.min) : 0;
+        const maxVal =
+          filters.priceInput.max !== ""
+            ? Number(filters.priceInput.max)
+            : Infinity;
+        match =
+          match &&
+          product.discountedPrice >= minVal &&
+          product.discountedPrice < maxVal;
       }
       // Discount filter.
       if (filters.discountFilter.length > 0) {
         const discountPercent = product.discountedPrice
-          ? Math.round(((product.price - product.discountedPrice) / product.price) * 100)
+          ? Math.round(
+              ((product.price - product.discountedPrice) / product.price) * 100
+            )
           : 0;
         match =
           match &&
           filters.discountFilter.some((label) => {
-            if (label === "0-20%") return discountPercent >= 0 && discountPercent < 20;
-            if (label === "20-40%") return discountPercent >= 20 && discountPercent < 40;
-            if (label === "40-60%") return discountPercent >= 40 && discountPercent < 60;
-            if (label === "60-80%") return discountPercent >= 60 && discountPercent < 80;
-            if (label === "80-100%") return discountPercent >= 80 && discountPercent < 100;
+            if (label === "0-20%")
+              return discountPercent >= 0 && discountPercent < 20;
+            if (label === "20-40%")
+              return discountPercent >= 20 && discountPercent < 40;
+            if (label === "40-60%")
+              return discountPercent >= 40 && discountPercent < 60;
+            if (label === "60-80%")
+              return discountPercent >= 60 && discountPercent < 80;
+            if (label === "80-100%")
+              return discountPercent >= 80 && discountPercent < 100;
             return false;
           });
       }
@@ -363,37 +401,45 @@ const discountRanges = [
     });
 
     // Shuffle the filtered products
-    let shuffledProducts = shuffleArray(filtered);
+    // let shuffledProducts = shuffleArray(filtered);
 
-    const bestSellers = filtered.filter(p => p.bestseller && p.count > 0);
-  const regularProducts = filtered.filter(p => !p.bestseller && p.count > 0);
-  const outOfStockProducts = filtered.filter(p => p.count === 0);
+    const bestSellers = filtered.filter((p) => p.bestseller && p.count > 0);
+    const regularProducts = filtered.filter(
+      (p) => !p.bestseller && p.count > 0
+    );
+    const outOfStockProducts = filtered.filter((p) => p.count === 0);
 
-  // Apply sorting based on the selected sortType
-  const sortProducts = (products) => {
-    switch (filters.sortType) {
-      case 'low-high':
-        return [...products].sort((a, b) => (a.discountedPrice || a.price) - (b.discountedPrice || b.price));
-      case 'high-low':
-        return [...products].sort((a, b) => (b.discountedPrice || b.price) - (a.discountedPrice || a.price));
-      case 'relevant':
-      default:
-        // For relevant, shuffle within groups but keep bestsellers first
-        return shuffleArray(products);
-    }
-  };
+    // Apply sorting based on the selected sortType
+    const sortProducts = (products) => {
+      switch (filters.sortType) {
+        case "low-high":
+          return [...products].sort(
+            (a, b) =>
+              (a.discountedPrice || a.price) - (b.discountedPrice || b.price)
+          );
+        case "high-low":
+          return [...products].sort(
+            (a, b) =>
+              (b.discountedPrice || b.price) - (a.discountedPrice || a.price)
+          );
+        case "relevant":
+        default:
+          // For relevant, keep the existing order
+          return products;
+      }
+    };
 
-  // Apply sorting to each group
-  const sortedBestSellers = sortProducts(bestSellers);
-  const sortedRegularProducts = sortProducts(regularProducts);
-  const sortedOutOfStock = outOfStockProducts; // Don't sort out of stock items
+    // Apply sorting to each group
+    const sortedBestSellers = sortProducts(bestSellers);
+    const sortedRegularProducts = sortProducts(regularProducts);
+    const sortedOutOfStock = outOfStockProducts; // Don't sort out of stock items
 
-  return [
-    ...sortedBestSellers,
-    ...sortedRegularProducts,
-    ...sortedOutOfStock
-  ];
-}, [allProducts, filters, search]);
+    return [
+      ...sortedBestSellers,
+      ...sortedRegularProducts,
+      ...sortedOutOfStock,
+    ];
+  }, [allProducts, filters, search]);
 
   useEffect(() => {
     setProducts(filteredProducts);
@@ -477,7 +523,7 @@ const discountRanges = [
         )}
       </div>
       {/* BRAND Filter */}
-      <div>
+      {/* <div>
         <div className="mb-4 flex justify-between items-center">
           <button
             onClick={() => setShowBrandFilter(!showBrandFilter)}
@@ -511,7 +557,7 @@ const discountRanges = [
             </div>
           </div>
         )}
-      </div>
+      </div> */}
       {/* AGE Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
@@ -759,8 +805,12 @@ const discountRanges = [
       </div>
     </div>
   );
- 
 
+  useEffect(() => {
+    if (location.state?.scrollY != null) {
+      window.scrollTo(0, location.state.scrollY);
+    }
+  }, [location.state]);
   return (
     <div className="relative">
       <div
@@ -808,7 +858,9 @@ const discountRanges = [
         </div>
         <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 border-t pt-10  relative">
           {/* <div className="hidden sm:block min-w-[180px]">{filterContent}</div> */}
-          <div className="hidden sm:block min-w-[180px] sticky top-36 self-start">{filterContent}</div>
+          <div className="hidden sm:block min-w-[180px] sticky top-36 self-start">
+            {filterContent}
+          </div>
           <div className="flex-1 relative">
             <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between mb-3 sticky top-[124px] z-40 bg-white py-2 bg-white">
               <Title text1="ALL" text2="COLLECTIONS" />
@@ -853,7 +905,7 @@ const discountRanges = [
                       Category: {filter} &times;
                     </span>
                   ))}
-                  {filters.brandFilter.map((filter) => (
+                  {/* {filters.brandFilter.map((filter) => (
                     <span
                       key={`brand-${filter}`}
                       className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm cursor-pointer"
@@ -861,7 +913,7 @@ const discountRanges = [
                     >
                       Brand: {filter} &times;
                     </span>
-                  ))}
+                  ))} */}
                   {filters.ageFilter.map((filter) => (
                     <span
                       key={`age-${filter}`}
@@ -956,6 +1008,11 @@ const discountRanges = [
                       count={item.count}
                       color={item.color}
                       bestseller={item.bestseller}
+                      onClick={() =>
+                        navigate(`/product/${item._id}`, {
+                          state: { scrollY: window.scrollY },
+                        })
+                      }
                     />
                   );
                 })

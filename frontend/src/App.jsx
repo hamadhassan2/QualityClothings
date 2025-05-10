@@ -26,10 +26,9 @@ const App = () => {
 
   // 1) scroll & loader
   useEffect(() => {
-    window.scrollTo(0, 0);
-    const t = setTimeout(() => setShowAnimation(false), 1500);
-    return () => clearTimeout(t);
-  }, []);
+    const timer = setTimeout(() => setShowAnimation(false), 1500)
+    return () => clearTimeout(timer)
+  }, [])
 
 
   useEffect(() => {
