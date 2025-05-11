@@ -230,52 +230,103 @@ const [bestSellerOnly, setBestSellerOnly] = useState(false);
     setShowSubCategorySuggestions(false);
   };
 
-  const openEditModal = (product) => {
-    setSelectedProduct({ ...product, combo: product.combo || 1 });
-    // For the new variant color field in the edit modal, initialize filteredColors list
-    setFilteredColors(colorSuggestionsList);
-    setShowEditModal(true);
-  };
+ const openEditModal = async (product) => {
+   try {
+     // hit the single‐product endpoint to get EVERYTHING (including images)
+    const { data } = await axios.post(
+       `${backendUrl}/api/product/single`,
+       { productId: product._id },
+       { headers: { token } }
+     );
+     if (!data.success) {
+       toast.error(data.message);
+       return;
+     }
+     // now data.product has .image (array of URLs), .variants, etc.
+     setSelectedProduct({
+       ...data.product,
+       combo: data.product.combo || 1
+     });
+     setFilteredColors(colorSuggestionsList);
+     setShowEditModal(true);
+   } catch (err) {
+     console.error(err);
+     toast.error("Failed to load full product details.");
+   }
+ };
 
   const closeEditModal = () => {
     setSelectedProduct(null);
     setShowEditModal(false);
   };
 
-  const updateProduct = async (e) => {
-    e.preventDefault();
-    try {
-      const { _id, name, description, price, discountedPrice, category, subCategory, variants, bestseller, combo } = selectedProduct;
-      const comboFactor = combo ? Number(combo) : 1;
-      const finalPrice = Number(price) * comboFactor;
-      const finalDiscountPrice = discountedPrice ? Number(discountedPrice) * comboFactor : undefined;
-      const computedCount = computeCount(selectedProduct);
-      const updatedData = {
-        productId: _id,
-        name,
-        description,
-        price: finalPrice,
-        discountedPrice: finalDiscountPrice,
-        category,
-        subCategory,
-        variants,
-        bestseller: bestseller.toString(),
-        count: computedCount,
-        combo
-      };
-      const response = await axios.post(`${backendUrl}/api/product/update`, updatedData, { headers: { token } });
-      if (response.data.success) {
-        toast.success(response.data.message);
-        setList(prevList => prevList.map(item => item._id === selectedProduct._id ? { ...selectedProduct } : item));
-        closeEditModal();
-      } else {
-        toast.error(response.data.message);
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(error.message);
+const updateProduct = async e => {
+  e.preventDefault();
+
+  // 1) compute new price
+  const base  = parseFloat(selectedProduct.price);
+  const combo = Number(selectedProduct.combo) || 1;
+  const price = base * combo;
+
+  // 2) guard against NaN
+  if (Number.isNaN(price)) {
+    toast.error("Invalid price — please enter a valid number before submitting");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("productId",   selectedProduct._id);
+  form.append("name",        selectedProduct.name);
+  form.append("description", selectedProduct.description);
+  form.append("price",       price.toString());
+  
+  if (selectedProduct.discountedPrice != null) {
+    const dp = parseFloat(selectedProduct.discountedPrice) * combo;
+    if (!Number.isNaN(dp)) {
+      form.append("discountedPrice", dp.toString());
     }
-  };
+  }
+
+  form.append("category",    selectedProduct.category);
+  form.append("subCategory", selectedProduct.subCategory);
+  form.append("variants",    JSON.stringify(selectedProduct.variants));
+  form.append("bestseller",  selectedProduct.bestseller.toString());
+  form.append("count",       computeCount(selectedProduct).toString());
+  form.append("combo",       combo.toString());
+
+  // any newly uploaded images
+  [1,2,3,4].forEach(i => {
+    const file = selectedProduct[`image${i}File`];
+    if (file) form.append(`image${i}`, file);
+  });
+
+  try {
+    const { data } = await axios.post(
+      `${backendUrl}/api/product/update`,
+      form,
+      {
+        headers: {
+          token,
+          "Content-Type": "multipart/form-data"
+        }
+      }
+    );
+    if (data.success) {
+      toast.success(data.message);
+      setList(list =>
+        list.map(p => p._id === data.product._id ? data.product : p)
+      );
+      closeEditModal();
+    } else {
+      toast.error(data.message);
+    }
+  } catch (err) {
+    console.error("Update error:", err);
+    toast.error(err.message || "Unexpected error");
+  }
+};
+
+
 
   const confirmDelete = async () => {
     if (productToDelete) {
@@ -687,7 +738,7 @@ const [bestSellerOnly, setBestSellerOnly] = useState(false);
             availableList.map((item, index) => (
               <div key={item._id || index} className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 border-b hover:bg-gray-50 min-w-[1000px]">
                 <img
-                  src={Array.isArray(item.image) ? item.image[0] : item.image}
+                  src={`${backendUrl}${Array.isArray(item.image) ? item.image[0] : item.image}`}
                   alt={item.name}
                   className="w-10 h-10 object-cover rounded cursor-pointer"
                   onClick={() => setEnlargedImage(Array.isArray(item.image) ? item.image[0] : item.image)}
@@ -803,7 +854,7 @@ const [bestSellerOnly, setBestSellerOnly] = useState(false);
               outOfStockList.map((item, index) => (
                 <div key={item._id || index} className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 border-b hover:bg-gray-50 min-w-[1000px]">
                   <img
-                    src={Array.isArray(item.image) ? item.image[0] : item.image}
+                    src={`${backendUrl}${Array.isArray(item.image) ? item.image[0] : item.image}`}
                     alt={item.name}
                     className="w-10 h-10 object-cover rounded cursor-pointer"
                     onClick={() => setEnlargedImage(Array.isArray(item.image) ? item.image[0] : item.image)}
@@ -856,6 +907,39 @@ const [bestSellerOnly, setBestSellerOnly] = useState(false);
           <div className="bg-white p-6 rounded-xl shadow-2xl border border-gray-200 w-full max-w-2xl mx-4">
             <h2 className="text-2xl font-bold mb-6">Edit Product</h2>
             <form onSubmit={updateProduct} className="space-y-6">
+              {/* Image Uploads */}
+<div className="grid grid-cols-2 gap-4">
+  {[1,2,3,4].map((i) => (
+    <div key={i}>
+      <label className="block text-lg font-medium mb-1">Image {i}</label>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={e =>
+          setSelectedProduct(prev => ({
+            ...prev,
+            [`image${i}File`]: e.target.files[0]
+          }))
+        }
+        className="w-full"
+      />
+      {/* Optional: preview */}
+      {selectedProduct.image[i-1] && !selectedProduct[`image${i}File`] && (
+        <img
+          src={`${backendUrl}${selectedProduct.image[i-1]}`}
+          className="mt-2 h-16 object-cover"
+        />
+      )}
+      {selectedProduct[`image${i}File`] && (
+        <img
+          src={URL.createObjectURL(selectedProduct[`image${i}File`])}
+          className="mt-2 h-16 object-cover"
+        />
+      )}
+    </div>
+  ))}
+</div>
+
               {/* Product Name */}
               <div>
                 <label className="block text-xl font-medium mb-2">
@@ -1220,7 +1304,7 @@ const [bestSellerOnly, setBestSellerOnly] = useState(false);
           className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50"
           onClick={() => setEnlargedImage(null)}
         >
-          <img src={enlargedImage} alt="Enlarged" className="max-h-full max-w-full" />
+          <img src={`${backendUrl}${enlargedImage}`} alt="Enlarged" className="max-h-full max-w-full" />
         </div>
       )}
     </section>

@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-
+import { backendUrl } from "../App";
 const currency = "₹ ";
 
 const ProductCard = ({
@@ -79,7 +79,7 @@ const ProductCard = ({
           {/* subtle zoom on hover */}
         {/* subtle zoom on hover */}
 <img
-  src={img}
+ src={`${backendUrl}${img}`}
   alt={name}
   className={`
     w-full h-full object-cover object-center

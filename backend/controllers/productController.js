@@ -169,92 +169,210 @@ const listFilteredProducts = async (req, res) => {
 };
 
 // Add product
+// controllers/productController.js
+
 const addProduct = async (req, res) => {
   try {
+    console.log('=== ADD PRODUCT ===');
+    console.log('Incoming req.body:', req.body);
+    console.log('Incoming req.files keys:', Object.keys(req.files || {}));
+
+    // 1️⃣ Destructure raw fields
     const {
       name,
-      price,
-      discountedPrice,
+      price: priceStr,
+      discountedPrice: dpStr,
       description,
       category,
       subCategory,
       variants,
       bestseller,
-      count,
+      count: countStr,
     } = req.body;
 
-    const image1 = req.files.image1 && req.files.image1[0];
-    const image2 = req.files.image2 && req.files.image2[0];
-    const image3 = req.files.image3 && req.files.image3[0];
-    const image4 = req.files.image4 && req.files.image4[0];
+    console.log('Raw priceStr:', priceStr, ' dpStr:', dpStr, ' countStr:', countStr);
 
+    // 2️⃣ Handle images
+    const image1 = req.files.image1?.[0];
+    const image2 = req.files.image2?.[0];
+    const image3 = req.files.image3?.[0];
+    const image4 = req.files.image4?.[0];
     const images = [image1, image2, image3, image4].filter(Boolean);
+    const imagesUrl = images.map((img) => `/uploads/${img.filename}`);
+    console.log('Uploaded files → URLs:', imagesUrl);
 
-    const imagesUrl = images.map((item) => `/uploads/${item.filename}`);
-
+    // 3️⃣ Parse variants JSON if needed
     let parsedVariants = variants;
-    if (typeof variants === "string") {
-      parsedVariants = JSON.parse(variants);
+    if (typeof variants === 'string') {
+      try {
+        parsedVariants = JSON.parse(variants);
+      } catch (e) {
+        console.error('❌ Failed to parse variants JSON:', variants, e);
+        return res.status(400).json({ success: false, message: 'Invalid variants format' });
+      }
+    }
+    console.log('Parsed variants:', parsedVariants);
+
+    // 4️⃣ Convert numeric fields
+    const priceNum = parseFloat(priceStr);
+    if (Number.isNaN(priceNum)) {
+      console.warn(`⚠️ price "${priceStr}" is not a number`);
+    }
+    const dpNum = dpStr != null ? parseFloat(dpStr) : undefined;
+    if (dpStr != null && Number.isNaN(dpNum)) {
+      console.warn(`⚠️ discountedPrice "${dpStr}" is not a number`);
+    }
+    const countNum = countStr != null ? parseInt(countStr, 10) : 0;
+    if (countStr != null && Number.isNaN(countNum)) {
+      console.warn(`⚠️ count "${countStr}" is not a number, defaulting to 0`);
     }
 
+    // 5️⃣ Build product object
     const productData = {
       name,
-      price: Number(price),
-      discountedPrice: discountedPrice ? Number(discountedPrice) : undefined,
+      price: Number.isNaN(priceNum) ? 0 : priceNum,
+      discountedPrice: Number.isNaN(dpNum) ? undefined : dpNum,
       description,
       category,
       subCategory,
       variants: parsedVariants,
-      bestseller: bestseller === "true",
+      bestseller: bestseller === 'true',
       image: imagesUrl,
-      count: count ? Number(count) : 0,
+      count: Number.isNaN(countNum) ? 0 : countNum,
       date: Date.now(),
     };
+    console.log('Final productData to save:', productData);
 
+    // 6️⃣ Save
     const product = new productModel(productData);
     await product.save();
-    return res.json({ success: true, message: "Product added successfully" });
+
+    console.log('✅ Product saved with ID:', product._id);
+    return res.json({ success: true, message: 'Product added successfully' });
   } catch (error) {
-    return res.json({ success: false, message: error.message });
+    console.error('🔥 Error in addProduct:', error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
+
 // Update product
+// Update product
+// Update product
+// controllers/productController.js
+
+// Update product (with debug logging)
 const updateProduct = async (req, res) => {
   try {
+    console.log('=== UPDATE PRODUCT ===');
+    console.log('Incoming req.body:', req.body);
+    console.log('Incoming req.files keys:', Object.keys(req.files || {}));
+
+    // Destructure raw strings from form
     const {
       productId,
       name,
-      price,
-      discountedPrice,
       description,
+      price: priceStr,
+      discountedPrice: dpStr,
       category,
       subCategory,
       variants,
       bestseller,
-      count,
+      count: countStr,
+      combo: comboStr
     } = req.body;
-    let parsedVariants = variants;
-    if (typeof variants === "string") {
-      parsedVariants = JSON.parse(variants);
+
+    console.log('Raw priceStr:', priceStr, '  dpStr:', dpStr, '  countStr:', countStr, '  comboStr:', comboStr);
+
+    // 1) Fetch existing doc
+    const existing = await productModel.findById(productId);
+    if (!existing) {
+      console.log('⛔️ Product not found:', productId);
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
-    const updateData = {
-      name,
-      price: Number(price),
-      discountedPrice: discountedPrice ? Number(discountedPrice) : undefined,
-      description,
-      category,
-      subCategory,
-      variants: parsedVariants,
-      bestseller: bestseller === "true",
-      count: count ? Number(count) : 0, // Ensure count is updated
-    };
-    await productModel.findByIdAndUpdate(productId, updateData);
-    return res.json({ success: true, message: "Product updated successfully" });
-  } catch (error) {
-    return res.json({ success: false, message: error.message });
+
+    // 2) Build updateData
+    const updateData = {};
+
+    if (name        !== undefined) updateData.name        = name;
+    if (description !== undefined) updateData.description = description;
+
+    // 3) Parse price
+    let incomingPrice = parseFloat(priceStr);
+    if (Number.isNaN(incomingPrice)) {
+      console.warn(`⚠️ priceStr "${priceStr}" is NaN, falling back to existing.price`, existing.price);
+      incomingPrice = existing.price;
+    }
+    updateData.price = incomingPrice;
+
+    // 4) Parse discountedPrice
+    if (dpStr != null) {
+      let incomingDp = parseFloat(dpStr);
+      if (Number.isNaN(incomingDp)) {
+        console.warn(`⚠️ discountedPrice "${dpStr}" is NaN — skipping update`);
+      } else {
+        updateData.discountedPrice = incomingDp;
+      }
+    }
+
+    // 5) Category / subCategory / bestseller
+    if (category    !== undefined) updateData.category    = category;
+    if (subCategory !== undefined) updateData.subCategory = subCategory;
+    if (bestseller  !== undefined) updateData.bestseller  = bestseller === "true";
+
+    // 6) count & combo
+    const c  = parseInt(countStr, 10);
+    const cb = parseInt(comboStr, 10);
+    console.log('Parsed count:', c, ' combo:', cb);
+    if (!Number.isNaN(c))  updateData.count = c;
+    if (!Number.isNaN(cb)) updateData.combo = cb;
+
+    // 7) variants (JSON)
+    if (variants !== undefined) {
+      try {
+        updateData.variants = typeof variants === "string"
+          ? JSON.parse(variants)
+          : variants;
+      } catch (e) {
+        console.error('❌ Failed to parse variants JSON:', variants, e);
+      }
+    }
+
+    // 8) Merge images
+    const uploadedFiles = Object.values(req.files || {})
+      .flat()
+      .map(f => `/uploads/${f.filename}`);
+    console.log('New upload URLs:', uploadedFiles);
+
+    const existingImages = Array.isArray(existing.image)
+      ? existing.image
+      : [ existing.image ].filter(Boolean);
+    updateData.image = existingImages.concat(uploadedFiles);
+
+    console.log('Final updateData payload:', updateData);
+
+    // 9) Perform update
+    const updated = await productModel.findByIdAndUpdate(
+      productId,
+      updateData,
+      { new: true }
+    );
+
+    console.log('✅ Update succeeded, returning:', updated);
+    return res.json({
+      success: true,
+      message: "Product updated successfully",
+      product: updated
+    });
+  } catch (err) {
+    console.error('🔥 Error in updateProduct:', err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+
 
 // List all products
 const listProducts = async (req, res) => {
