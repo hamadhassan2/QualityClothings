@@ -2,7 +2,11 @@ import { v2 as cloudinary } from "cloudinary";
 import productModel from "../models/productModel.js";
 import fs from 'fs';
 import path from 'path';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
 // Aggregate variant options (size, age, etc.)
 const aggregateVariantOptions = (variants) => {
   if (!variants || !Array.isArray(variants)) return [];
@@ -293,31 +297,24 @@ const updateProduct = async (req, res) => {
 
     // 3️⃣ Delete old image files for any replaced slots
     //    Assumes your uploads live in projectRoot/uploads
-   [1,2,3,4].forEach(i => {
+  [1,2,3,4].forEach(i => {
   const incoming = req.files[`image${i}`];
-  if (!incoming || !incoming.length) return;     // only delete if there's a new upload
+  if (!incoming?.length) return;
 
   const oldUrl = Array.isArray(existing.image)
     ? existing.image[i - 1]
     : null;
   if (!oldUrl) return;
 
-  // 1) get just the filename
-  const filename = path.basename(oldUrl);        // e.g. "1746956567875.png"
+  const filename = path.basename(oldUrl);
+  const oldPath  = path.join(__dirname, '../uploads', filename);
 
-  // 2) build the real path to your uploads folder
-  //    __dirname is ".../backend/controllers", so "../uploads" is correct
-  const oldPath = path.join(__dirname, '../uploads', filename);
-
-  // 3) unlink it
   fs.unlink(oldPath, err => {
-    if (err) {
-      console.error('⚠️ Failed to delete old image:', oldPath, err);
-    } else {
-      console.log('✅ Deleted old image:', oldPath);
-    }
+    if (err) console.error('Failed to delete', oldPath, err);
+    else console.log('Deleted', oldPath);
   });
 });
+
     // 4️⃣ Build updateData object
     const updateData = {};
 
