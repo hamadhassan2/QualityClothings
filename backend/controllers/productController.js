@@ -1,5 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import productModel from "../models/productModel.js";
+import fs from 'fs';
+import path from 'path';
 
 // Aggregate variant options (size, age, etc.)
 const aggregateVariantOptions = (variants) => {
@@ -268,7 +270,7 @@ const updateProduct = async (req, res) => {
     console.log('Incoming req.body:', req.body);
     console.log('Incoming req.files keys:', Object.keys(req.files || {}));
 
-    // Destructure raw strings from form
+    // 1️⃣ Destructure raw strings from the form
     const {
       productId,
       name,
@@ -283,88 +285,109 @@ const updateProduct = async (req, res) => {
       combo: comboStr
     } = req.body;
 
-    console.log('Raw priceStr:', priceStr, '  dpStr:', dpStr, '  countStr:', countStr, '  comboStr:', comboStr);
-
-    // 1) Fetch existing doc
+    // 2️⃣ Fetch existing product
     const existing = await productModel.findById(productId);
     if (!existing) {
-      console.log('⛔️ Product not found:', productId);
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    // 2) Build updateData
+    // 3️⃣ Delete old image files for any replaced slots
+    //    Assumes your uploads live in projectRoot/uploads
+   [1,2,3,4].forEach(i => {
+  const incoming = req.files[`image${i}`];
+  if (!incoming || !incoming.length) return;     // only delete if there's a new upload
+
+  const oldUrl = Array.isArray(existing.image)
+    ? existing.image[i - 1]
+    : null;
+  if (!oldUrl) return;
+
+  // 1) get just the filename
+  const filename = path.basename(oldUrl);        // e.g. "1746956567875.png"
+
+  // 2) build the real path to your uploads folder
+  //    __dirname is ".../backend/controllers", so "../uploads" is correct
+  const oldPath = path.join(__dirname, '../uploads', filename);
+
+  // 3) unlink it
+  fs.unlink(oldPath, err => {
+    if (err) {
+      console.error('⚠️ Failed to delete old image:', oldPath, err);
+    } else {
+      console.log('✅ Deleted old image:', oldPath);
+    }
+  });
+});
+    // 4️⃣ Build updateData object
     const updateData = {};
 
-    if (name        !== undefined) updateData.name        = name;
+    if (name !== undefined)        updateData.name        = name;
     if (description !== undefined) updateData.description = description;
-
-    // 3) Parse price
-    let incomingPrice = parseFloat(priceStr);
-    if (Number.isNaN(incomingPrice)) {
-      console.warn(`⚠️ priceStr "${priceStr}" is NaN, falling back to existing.price`, existing.price);
-      incomingPrice = existing.price;
-    }
-    updateData.price = incomingPrice;
-
-    // 4) Parse discountedPrice
-    if (dpStr != null) {
-      let incomingDp = parseFloat(dpStr);
-      if (Number.isNaN(incomingDp)) {
-        console.warn(`⚠️ discountedPrice "${dpStr}" is NaN — skipping update`);
-      } else {
-        updateData.discountedPrice = incomingDp;
-      }
-    }
-
-    // 5) Category / subCategory / bestseller
-    if (category    !== undefined) updateData.category    = category;
+    if (category !== undefined)    updateData.category    = category;
     if (subCategory !== undefined) updateData.subCategory = subCategory;
-    if (bestseller  !== undefined) updateData.bestseller  = bestseller === "true";
+    if (bestseller !== undefined)  updateData.bestseller  = bestseller === 'true';
 
-    // 6) count & combo
-    const c  = parseInt(countStr, 10);
-    const cb = parseInt(comboStr, 10);
-    console.log('Parsed count:', c, ' combo:', cb);
-    if (!Number.isNaN(c))  updateData.count = c;
-    if (!Number.isNaN(cb)) updateData.combo = cb;
+    // Parse & validate price
+    let priceNum = parseFloat(priceStr);
+    if (Number.isNaN(priceNum)) priceNum = existing.price;
+    updateData.price = priceNum;
 
-    // 7) variants (JSON)
+    // Parse & validate discountedPrice
+    if (dpStr != null) {
+      const dpNum = parseFloat(dpStr);
+      if (!Number.isNaN(dpNum)) updateData.discountedPrice = dpNum;
+    }
+
+    // Parse count & combo
+    const countNum = parseInt(countStr, 10);
+    if (!Number.isNaN(countNum)) updateData.count = countNum;
+    const comboNum = parseInt(comboStr, 10);
+    if (!Number.isNaN(comboNum)) updateData.combo = comboNum;
+
+    // Parse variants JSON
     if (variants !== undefined) {
       try {
-        updateData.variants = typeof variants === "string"
-          ? JSON.parse(variants)
+        updateData.variants = typeof variants === 'string' 
+          ? JSON.parse(variants) 
           : variants;
       } catch (e) {
         console.error('❌ Failed to parse variants JSON:', variants, e);
       }
     }
 
-    // 8) Merge images
-    const uploadedFiles = Object.values(req.files || {})
-      .flat()
-      .map(f => `/uploads/${f.filename}`);
-    console.log('New upload URLs:', uploadedFiles);
+    // 5️⃣ Build the new image array, slot-by-slot
+    const newUploads = {};
+    [1, 2, 3, 4].forEach(i => {
+      const files = req.files[`image${i}`];
+      if (files && files.length) {
+        newUploads[i - 1] = `/uploads/${files[0].filename}`;
+      }
+    });
 
-    const existingImages = Array.isArray(existing.image)
+    const oldImages = Array.isArray(existing.image)
       ? existing.image
-      : [ existing.image ].filter(Boolean);
-    updateData.image = existingImages.concat(uploadedFiles);
+      : [existing.image].filter(Boolean);
 
-    console.log('Final updateData payload:', updateData);
+    const finalImages = [0, 1, 2, 3]
+      .map(slot => newUploads[slot] || oldImages[slot] || null)
+      .filter(Boolean);
 
-    // 9) Perform update
+    updateData.image = finalImages;
+
+    // 6️⃣ Perform the update and return the new document
     const updated = await productModel.findByIdAndUpdate(
       productId,
       updateData,
       { new: true }
     );
 
-    console.log('✅ Update succeeded, returning:', updated);
+    console.log('✅ Update succeeded:', updated._id);
     return res.json({
       success: true,
-      message: "Product updated successfully",
+      message: 'Product updated successfully',
       product: updated
     });
+
   } catch (err) {
     console.error('🔥 Error in updateProduct:', err);
     return res.status(500).json({ success: false, message: err.message });
