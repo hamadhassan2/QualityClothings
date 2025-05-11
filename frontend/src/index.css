@@ -8,6 +8,15 @@ a.active hr{
 *{
     font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+/* in your global CSS or a module: */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari & Opera */
+}
+
 .prata-regular {
     font-family: "Prata", serif;
     font-weight: 400;

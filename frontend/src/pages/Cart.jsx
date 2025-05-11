@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import { MutatingDots } from 'react-loader-spinner';
 import { FaShoppingCart } from 'react-icons/fa';
 import OurPolicy from '../components/OurPolicy';
-
+import { backendUrl } from '../App'; 
 const Cart = () => {
   const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext);
   const [cartData, setCartData] = useState([]);
@@ -40,7 +40,12 @@ const Cart = () => {
               _id: productId,
               variantKey,
               productName: product.name,
-              image: Array.isArray(product.image) ? product.image[0] : product.image,
+              image: (() => {
+                          const raw = Array.isArray(product.image)
+                            ? product.image[0]
+                            : product.image;
+                          return raw.startsWith('http') ? raw : `${backendUrl}${raw}`;
+                        })(),
               price: product.discountedPrice || product.price,
               size,
               age,

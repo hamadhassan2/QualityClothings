@@ -4,7 +4,7 @@ import { ShopContext } from "../context/ShopContext";
 import RelatedProduct from "../components/RelatedProduct";
 import { toast } from "react-toastify";
 import { MutatingDots } from "react-loader-spinner";
-
+import { backendUrl } from "../App"; 
 const Product = () => {
   const { productId } = useParams();
   const { products, cartItems, addToCart } = useContext(ShopContext);
@@ -27,22 +27,25 @@ const Product = () => {
     }, 1500);
     return () => clearTimeout(timer);
   }, []);
-
   useEffect(() => {
-    const fetchProductData = () => {
-      const product = products.find((item) => item._id === productId);
-      if (product) {
-        setProductData(product);
-        // Set all images when product data is loaded
-        const images = Array.isArray(product.image)
-          ? product.image
-          : [product.image];
+      const fetchProductData = () => {
+          const product = products.find((item) => item._id === productId);
+          if (!product) return;
+    
+          setProductData(product);
+    
+          // Build absolute URLs for every image on your VPS
+         const raw = Array.isArray(product.image)
+            ? product.image
+            : [product.image];
+         const images = raw.map(src =>
+            // if it’s already an HTTP URL, leave it; otherwise prefix with backendUrl
+            src.startsWith("http") ? src : `${backendUrl}${src}`
+          );
+    
         setProductImages(images);
-        if (images.length > 0) {
-          setMainImage(images[0]);
-        }
-      }
-    };
+         if (images.length) setMainImage(images[0]);
+        };
     fetchProductData();
   }, [productId, products]);
 

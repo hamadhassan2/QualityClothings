@@ -4,7 +4,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { assets } from '../assets/frontend_assets/assets';
 
 const Footer = () => {
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  // const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
   return (
     <div>
@@ -27,7 +27,7 @@ const Footer = () => {
             <li>
               <Link 
                 to="/" 
-                onClick={scrollToTop}
+                // onClick={scrollToTop}
                 className="hover:text-black hover:underline"
               >
                 Home
@@ -36,7 +36,7 @@ const Footer = () => {
             <li>
               <Link 
                 to="/about" 
-                onClick={scrollToTop}
+                // onClick={scrollToTop}
                 className="hover:text-black hover:underline"
               >
                 About
@@ -45,7 +45,7 @@ const Footer = () => {
             <li>
               <Link 
                 to="/collection" 
-                onClick={scrollToTop}
+                // onClick={scrollToTop}
                 className="hover:text-black hover:underline"
               >
                 Collection

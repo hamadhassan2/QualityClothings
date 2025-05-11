@@ -321,15 +321,18 @@ const Collection = () => {
         match = match && filters.brandFilter.includes(product.name);
       }
       // Age filter: if any variant's "age ageUnit" matches one of the filters.
-      if (filters.ageFilter.length > 0) {
-        match =
-          match &&
-          product.variants &&
-          product.variants.some((v) => {
-            const variantAge = `${v.age} ${v.ageUnit}`.trim();
-            return filters.ageFilter.includes(variantAge);
-          });
-      }
+   if (filters.ageFilter.length > 0) {
+  match =
+    match &&
+    product.variants &&
+    product.variants.some((v) => {
+      const variantAge = `${v.age} ${v.ageUnit}`.trim();
+      // only count it a match if there's stock
+      return filters.ageFilter.includes(variantAge)
+             && Number(v.quantity) > 0;
+    });
+}
+
       // Size filter.
       if (filters.sizeFilter.length > 0) {
         match =
@@ -806,11 +809,24 @@ const Collection = () => {
     </div>
   );
 
-  useEffect(() => {
-    if (location.state?.scrollY != null) {
-      window.scrollTo(0, location.state.scrollY);
-    }
-  }, [location.state]);
+  // useEffect(() => {
+  //   // const { collectionScrollY, lastClickedCard } = location.state || {};
+    
+  //   if (typeof collectionScrollY === 'number') {
+  //     // window.scrollTo(0, collectionScrollY);
+      
+  //     // Optionally highlight the last clicked card
+  //     if (lastClickedCard) {
+  //       const card = document.getElementById(lastClickedCard);
+  //       if (card) {
+  //         card.classList.add('ring-2', 'ring-yellow-400');
+  //         setTimeout(() => {
+  //           card.classList.remove('ring-2', 'ring-yellow-400');
+  //         }, 1000);
+  //       }
+  //     }
+  //   }
+  // }, [location.key]);
   return (
     <div className="relative">
       <div
@@ -858,9 +874,10 @@ const Collection = () => {
         </div>
         <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 border-t pt-10  relative">
           {/* <div className="hidden sm:block min-w-[180px]">{filterContent}</div> */}
-          <div className="hidden sm:block min-w-[180px] sticky top-36 self-start">
-            {filterContent}
-          </div>
+          <div className="hidden sm:block min-w-[180px] sticky top-36 self-start max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-hide">
+  {filterContent}
+</div>
+
           <div className="flex-1 relative">
             <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between mb-3 sticky top-[124px] z-40 bg-white py-2 bg-white">
               <Title text1="ALL" text2="COLLECTIONS" />
@@ -1010,7 +1027,7 @@ const Collection = () => {
                       bestseller={item.bestseller}
                       onClick={() =>
                         navigate(`/product/${item._id}`, {
-                          state: { scrollY: window.scrollY },
+                          // state: { scrollY: window.scrollY },
                         })
                       }
                     />

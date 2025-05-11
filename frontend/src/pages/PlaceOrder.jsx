@@ -108,21 +108,30 @@ const PlaceOrder = () => {
             );
             if (!product || !variant) continue;
             const size = variant.size ? variant.size.toUpperCase() : "";
-            orderItems.push({
-              _id: productId,
-              productName: product.name,
-              subCategory: product.subCategory,
-              color: variant.color || "",
-              size,
-              age: variant.age || "",
-              ageUnit: variant.ageUnit || "",
-              quantity,
-              variantId: variantKey,
-              productImage:
-                Array.isArray(product.image) && product.image.length > 0
-                  ? product.image[0]
-                  : product.image || "",
-            });
+           // 1️⃣ pull the raw path (first element if array, or the single string)
+const raw = Array.isArray(product.image)
+? product.image[0]
+: product.image || "";
+
+// 2️⃣ build a fully‐qualified, public URL
+const productImage = raw.startsWith("http")
+? raw
+: `${backendUrl}${raw}`;
+
+// 3️⃣ push the item object
+orderItems.push({
+_id:         productId,
+productName: product.name,
+subCategory: product.subCategory,
+color:       variant.color || "",
+size,
+age:        variant.age || "",
+ageUnit:    variant.ageUnit || "",
+quantity,
+variantId:   variantKey,
+productImage // ← use the URL you just built
+});
+
           }
         }
       }

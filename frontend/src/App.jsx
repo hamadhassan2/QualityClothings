@@ -23,7 +23,12 @@ export const currency   = "₹ ";
 const App = () => {
   const [showAnimation, setShowAnimation] = useState(true);
   const navigate = useNavigate();
-
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+  
   // 1) scroll & loader
   useEffect(() => {
     const timer = setTimeout(() => setShowAnimation(false), 1500)
@@ -31,14 +36,14 @@ const App = () => {
   }, [])
 
 
-  useEffect(() => {
-    const hasVisited = localStorage.getItem("hasVisited");
-    if (!hasVisited) {
-      localStorage.setItem("hasVisited", "true");
+  // useEffect(() => {
+  //   const hasVisited = localStorage.getItem("hasVisited");
+  //   if (!hasVisited) {
+  //     localStorage.setItem("hasVisited", "true");
       
-      navigate("/collection", { replace: true });
-    }
-  }, [navigate]);
+  //     navigate("/collection", { replace: true });
+  //   }
+  // }, [navigate]);
 
   return (
     <>
