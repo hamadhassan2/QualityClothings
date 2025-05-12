@@ -1,4 +1,6 @@
+// src/components/BestSeller.jsx
 import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import Title from './Title';
 import ProductCard from './ProductCard';
@@ -6,6 +8,7 @@ import ProductCard from './ProductCard';
 const BestSeller = () => {
   const { products } = useContext(ShopContext);
   const [bestSeller, setBestSeller] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (products && products.length > 0) {
@@ -24,10 +27,9 @@ const BestSeller = () => {
         </p>
       </div>
 
-      {/* Responsive grid: 2 columns on small and md, 4 columns on large screens */}
+      {/* Responsive grid: 2 columns on small/md, 4 on large */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {bestSeller.map((item, index) => {
-          // Use the first image if item.image is an array
           const img = Array.isArray(item.image) ? item.image[0] : item.image;
           return (
             <ProductCard
@@ -43,6 +45,7 @@ const BestSeller = () => {
               count={item.count}
               color={item.color}
               bestseller={item.bestseller}
+              onClick={() => navigate(`/product/${item._id}`)}
             />
           );
         })}

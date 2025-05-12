@@ -1,12 +1,14 @@
+// src/components/LatestCollection.jsx
 import React, { useContext, useEffect, useState } from "react";
 import { ShopContext } from "../context/ShopContext";
 import Title from "./Title";
 import ProductCard from "./ProductCard";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const LatestCollection = () => {
   const { products } = useContext(ShopContext);
   const [latestProducts, setLatestProducts] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (products && products.length > 0) {
@@ -38,13 +40,12 @@ const LatestCollection = () => {
               id={item._id}
               img={img}
               name={item.name}
-              category={item.category}
               subCategory={item.subCategory}
               price={item.price}
-              discountedPrice={item.discountedPrice} // optional: shows discounted price if available
-              ages={item.ages}
+              discountedPrice={item.discountedPrice}
               count={item.count}
-              color={item.color}
+              // ← pass in the navigation handler
+              onClick={() => navigate(`/product/${item._id}`)}
             />
           );
         })}
