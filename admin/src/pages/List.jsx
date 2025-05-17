@@ -71,11 +71,35 @@ const [bestSellerOnly, setBestSellerOnly] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productToDelete, setProductToDelete] = useState(null);
-
+const [selectedForClone, setSelectedForClone] = useState([]);
   // Global search states
   const [searchTerm, setSearchTerm] = useState("");
   const [searchField, setSearchField] = useState("name");
-
+const toggleSelectForClone = (id) => {
+  setSelectedForClone(prev =>
+    prev.includes(id)
+      ? prev.filter(i => i !== id)
+      : [...prev, id]
+  );
+};const cloneSelected = async () => {
+  if (!selectedForClone.length) return;
+  try {
+    await Promise.all(
+      selectedForClone.map(id =>
+        axios.post(`${backendUrl}/api/product/clone`,
+          { productId: id },
+          { headers: { token } }
+        )
+      )
+    );
+    toast.success("Cloned successfully!");
+    setSelectedForClone([]);
+    await fetchList();
+  } catch (err) {
+    console.error(err);
+    toast.error(err.message || "Clone failed");
+  }
+};
   // Filter states for available products.
   const [availableFilter, setAvailableFilter] = useState({
     name: [],
@@ -518,6 +542,7 @@ const updateProduct = async e => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
         <p className="mb-4 md:mb-0 text-3xl font-bold">ALL PRODUCTS LIST</p>
       <div className='flex flex-col justify-end gap-4'>
+        
         <EnhancedSearch
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -525,6 +550,18 @@ const updateProduct = async e => {
           setSearchField={setSearchField}
         />
         <label className="inline-flex items-end justify-end text-base">
+          <button
+  disabled={selectedForClone.length === 0}
+  onClick={cloneSelected}
+  className={`
+    mr-4 px-4 py-1 rounded
+    ${selectedForClone.length > 0
+      ? 'bg-blue-600 text-white hover:bg-blue-700'
+      : 'bg-gray-300 text-gray-600 cursor-not-allowed'}
+  `}
+>
+  Clone
+</button>
     <input
       type="checkbox"
       className="form-checkbox h-5 w-5 text-green-600"
@@ -533,6 +570,7 @@ const updateProduct = async e => {
     />
     <span className="ml-2">Best Sellers Only</span>
   </label>
+  
   </div>
       </div>
 
@@ -541,7 +579,8 @@ const updateProduct = async e => {
         <h3 className="text-xl font-semibold mb-3">AVAILABLE PRODUCTS</h3>
         <div className="overflow-x-auto">
           {/* Header Row */}
-          <div className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 bg-gray-600 text-white text-sm min-w-[1000px] rounded-sm">
+          <div className="grid grid-cols-[auto_1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 bg-gray-600 text-white text-sm min-w-[1000px] rounded-sm">
+            <span></span> 
             <span>Image</span>
             <span>NAME</span>
             <span>CATEGORY</span>
@@ -557,7 +596,7 @@ const updateProduct = async e => {
           {/* Filter Row: Each cell corresponds to the header column */}
           <div
             ref={availableFilterContainerRef}
-            className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-2 px-4 bg-gray-100 text-gray-800 text-xs min-w-[1000px]"
+            className="grid grid-cols-[auto_1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-2 px-4 bg-gray-100 text-gray-800 text-xs min-w-[1000px]"
           >
             {/* Column 1: Image (no filter) */}
             <div></div>
@@ -736,8 +775,16 @@ const updateProduct = async e => {
           {/* Available Products Rows */}
           {availableList.length > 0 ? (
             availableList.map((item, index) => (
-              <div key={item._id || index} className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 border-b hover:bg-gray-50 min-w-[1000px]">
-                <img
+              <div key={item._id || index} className="grid grid-cols-[auto_1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 border-b hover:bg-gray-50 min-w-[1000px]">
+               
+               <div className="flex justify-center p-2">
+  <input
+    type="checkbox"
+    className='form-checkbox h-5 w-5  text-blue-600'
+    checked={selectedForClone.includes(item._id)}
+    onChange={() => toggleSelectForClone(item._id)}
+  />
+</div> <img
                   src={`${backendUrl}${Array.isArray(item.image) ? item.image[0] : item.image}`}
                   alt={item.name}
                   className="w-10 h-10 object-cover rounded cursor-pointer"
@@ -790,7 +837,8 @@ const updateProduct = async e => {
           <h3 className="text-xl font-semibold text-black mb-3">OUT OF STOCK PRODUCTS</h3>
           <div className="overflow-x-auto">
             {/* Header Row for Out of Stock */}
-            <div className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 bg-gray-600 text-white text-sm min-w-[1000px] rounded-sm">
+            <div className="grid grid-cols-[auto_1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 bg-gray-600 text-white text-sm min-w-[1000px] rounded-sm">
+              <span></span> 
               <span>Image</span>
               <span>NAME</span>
               <span>CATEGORY</span>
@@ -806,7 +854,7 @@ const updateProduct = async e => {
             {/* Filter Row for Out of Stock */}
             <div
               ref={outFilterContainerRef}
-              className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-2 px-4 bg-gray-100 text-gray-800 text-xs min-w-[1000px]"
+              className="grid grid-cols-[auto_1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-2 px-4 bg-gray-100 text-gray-800 text-xs min-w-[1000px]"
             >
               <div></div>
               {/* Out-of-stock filters can be similar – here we'll just add Name filter for brevity */}
@@ -852,7 +900,15 @@ const updateProduct = async e => {
             {/* Out of Stock Products Rows */}
             {outOfStockList.length > 0 ? (
               outOfStockList.map((item, index) => (
-                <div key={item._id || index} className="grid grid-cols-[1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 border-b hover:bg-gray-50 min-w-[1000px]">
+                <div key={item._id || index} className="grid grid-cols-[auto_1fr_2fr_1fr_1fr_1fr_1fr_1fr_2fr_1fr_1fr_1fr] items-center py-3 px-4 border-b hover:bg-gray-50 min-w-[1000px]">
+                 <div className="flex justify-center p-2">
+  <input
+    type="checkbox"
+    className='form-checkbox h-5 w-5 text-blue-600'
+    checked={selectedForClone.includes(item._id)}
+    onChange={() => toggleSelectForClone(item._id)}
+  />
+</div>
                   <img
                     src={`${backendUrl}${Array.isArray(item.image) ? item.image[0] : item.image}`}
                     alt={item.name}

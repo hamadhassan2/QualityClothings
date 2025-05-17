@@ -451,6 +451,68 @@ const getBrands = async (req, res) => {
     return res.json({ success: false, message: error.message });
   }
 };
+export const cloneProduct = async (req, res) => {
+  try {
+    const { productId } = req.body;
+    // 1️⃣ Fetch original as plain object
+    const orig = await productModel.findById(productId).lean();
+    if (!orig) {
+      return res.status(404).json({ success: false, message: 'Original product not found' });
+    }
+
+    // 2️⃣ Destructure away fields we don’t want to copy verbatim
+    const { _id, date, count, image: origImages, variants: origVariants, ...rest } = orig;
+
+    // 3️⃣ Deep-clone variants, stripping each variant’s _id
+    const clonedVariants = Array.isArray(origVariants)
+      ? origVariants.map(({ _id, ...v }) => ({ ...v }))
+      : [];
+
+    // 4️⃣ Duplicate each image file on disk
+    const newImages = [];
+    if (Array.isArray(origImages)) {
+      for (const imgPath of origImages) {
+        // imgPath is like "/uploads/12345.jpg"
+        const relPath = imgPath.startsWith('/') ? imgPath.slice(1) : imgPath;
+        const src = path.join(__dirname, '..', relPath);
+
+        // build a unique new filename
+        const ext = path.extname(src);
+        const filename = `${Date.now()}-${Math.random().toString(36).slice(2,8)}${ext}`;
+        const dest = path.join(__dirname, '..', 'uploads', filename);
+
+        // copy the file
+        await fs.promises.copyFile(src, dest);
+
+        // store the new public path
+        newImages.push(`/uploads/${filename}`);
+      }
+    }
+
+    // 5️⃣ Build the cloned product payload
+    const cloneData = {
+      ...rest,
+      variants: clonedVariants,
+      image: newImages,
+      name: `${rest.name} (Copy)`,
+      date: Date.now()
+      // count will be recalculated by your pre-save hook
+    };
+
+    // 6️⃣ Save as a brand-new document (fresh _id for both product and variants)
+    const newProduct = new productModel(cloneData);
+    await newProduct.save();
+
+    return res.json({
+      success: true,
+      message: 'Product cloned successfully',
+      product: newProduct
+    });
+  } catch (err) {
+    console.error('Error in cloneProduct:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 export {
   listFilteredProducts,
@@ -461,4 +523,5 @@ export {
   updateProduct,
   getSubCategories,
   getBrands,
+  cloneProduct
 };

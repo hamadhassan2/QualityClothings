@@ -7,7 +7,8 @@ import {
   updateProduct,
   getSubCategories,
   getBrands,
-  listFilteredProducts
+  listFilteredProducts,
+  cloneProduct,
 } from "../controllers/productController.js";
 import upload from "../middleware/multer.js";
 import adminAuth from "../middleware/adminAuth.js";
@@ -30,6 +31,12 @@ productRouter.post("/filter", listFilteredProducts);
 productRouter.get("/subcategories", getSubCategories);
 productRouter.get("/brands", getBrands);
 productRouter.post(
+  '/clone',
+  adminAuth,
+  cloneProduct
+);
+
+productRouter.post(
   "/update",
   adminAuth,
   upload.fields([
@@ -40,6 +47,7 @@ productRouter.post(
   ]),
   updateProduct
 );
+
 
 productRouter.post("/reduce-quantity", async (req, res) => {
   try {
