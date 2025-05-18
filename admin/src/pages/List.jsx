@@ -46,7 +46,7 @@ const computeCountUnified = (product) => {
   if (!product.variants || product.variants.length === 0) return 0;
   const uniqueVariants = {};
   product.variants.forEach((v) => {
-    const key = `${v.size || ""}_${v.age || ""}_${v.ageUnit || ""}_${v.color.toLowerCase()}`;
+   const key = `${v.size || ""}_${v.age || ""}_${v.ageUnit || ""}_${(v.color||"").toLowerCase()}`;
     if (!uniqueVariants[key]) {
       uniqueVariants[key] = Number(v.quantity || 0);
     }
@@ -56,7 +56,8 @@ const computeCountUnified = (product) => {
 
 const computeColorsUnified = (product) => {
   if (!product.variants || product.variants.length === 0) return [];
-  const colors = product.variants.map(v => v.color);
+  const colors = product.variants
+    .map(v => v.color).filter(Boolean);  // drop null or undefined
   return Array.from(new Set(colors));
 };
 
@@ -1273,11 +1274,11 @@ const updateProduct = async e => {
                       toast.error("Please enter at least a size or an age.");
                       return;
                     }
-                    if (!quantity || isNaN(quantity) || !color) {
-                      toast.error("Please enter a valid quantity and color.");
+                  if (!quantity || isNaN(quantity)) {
+    toast.error("Please enter a valid quantity.");
                       return;
                     }
-                    const newVariant = { size: size || null, age: age || null, ageUnit, quantity, color };
+                    const newVariant = { size: size || null, age: age || null, ageUnit, quantity, color: color || null };
                     setSelectedProduct({
                       ...selectedProduct,
                       variants: [...(selectedProduct.variants || []), newVariant],

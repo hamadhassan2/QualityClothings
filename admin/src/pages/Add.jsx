@@ -201,8 +201,8 @@ const Add = ({ token }) => {
       toast.error("Please enter at least a size or an age for the variant.");
       return;
     }
-    if (!variantQuantity.trim() || isNaN(variantQuantity) || !variantColor.trim()) {
-      toast.error("Please enter a valid quantity and color for the variant.");
+    if (!variantQuantity.trim() || isNaN(variantQuantity)) {
+      toast.error("Please enter a valid quantity for the variant.");
       return;
     }
     const newVariant = {
@@ -210,7 +210,7 @@ const Add = ({ token }) => {
       age: variantAge.trim() || null,
       ageUnit: variantAge.trim() ? variantAgeUnit : null,
       quantity: Number(variantQuantity),
-      color: variantColor.trim(),
+      color: variantColor.trim() || null,
     };
     if (
       variants.find(

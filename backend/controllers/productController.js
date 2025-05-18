@@ -451,7 +451,7 @@ const getBrands = async (req, res) => {
     return res.json({ success: false, message: error.message });
   }
 };
-export const cloneProduct = async (req, res) => {
+const cloneProduct = async (req, res) => {
   try {
     const { productId } = req.body;
     // 1️⃣ Fetch original as plain object

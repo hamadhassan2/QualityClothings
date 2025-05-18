@@ -5,7 +5,8 @@ const variantSchema = new mongoose.Schema({
   age: { type: String },        // Optional: if using age
   ageUnit: { type: String },    // Optional (e.g., "Years" or "Months")
   quantity: { type: Number, required: true },
-  color: { type: String, required: true }
+  color: { type: String, required: false, default: null }
+
 });
 
 const productSchema = new mongoose.Schema({
