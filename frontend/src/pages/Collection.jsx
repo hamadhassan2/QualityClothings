@@ -488,6 +488,51 @@ const sortProducts = (products) => {
           </div>
         )}
       </div>
+         <div>
+        <div className="mb-4 flex justify-between items-center">
+          <button
+            onClick={() => setShowAgeFilter(!showAgeFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
+            AGE
+          </button>
+          <button
+            onClick={() => setShowAgeFilter(!showAgeFilter)}
+            className="text-2xl font-semibold text-gray-800"
+          >
+            {showAgeFilter ? "–" : "+"}
+          </button>
+        </div>
+        {showAgeFilter && (
+          <div className="mt-2 p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
+            <div className="flex flex-col gap-2 text-sm text-gray-600">
+              {uniqueAges.map((ageLabel) => (
+                <label key={ageLabel} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 accent-gray-600"
+                    value={ageLabel}
+                    onChange={() => toggleFilter("ageFilter", ageLabel)}
+                    checked={filters.ageFilter.includes(ageLabel)}
+                  />
+                  {getDisplayAge(ageLabel)} (
+                  {
+                    allProducts.filter(
+                      (item) =>
+                        item.variants &&
+                        item.variants.some(
+                          (v) =>
+                            v.age && `${v.age} ${v.ageUnit}`.trim() === ageLabel
+                        )
+                    ).length
+                  }
+                  )
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
       {/* CATEGORY Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
@@ -565,51 +610,7 @@ const sortProducts = (products) => {
         )}
       </div> */}
       {/* AGE Filter */}
-      <div>
-        <div className="mb-4 flex justify-between items-center">
-          <button
-            onClick={() => setShowAgeFilter(!showAgeFilter)}
-            className="text-2xl font-semibold text-gray-800"
-          >
-            AGE
-          </button>
-          <button
-            onClick={() => setShowAgeFilter(!showAgeFilter)}
-            className="text-2xl font-semibold text-gray-800"
-          >
-            {showAgeFilter ? "–" : "+"}
-          </button>
-        </div>
-        {showAgeFilter && (
-          <div className="mt-2 p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
-            <div className="flex flex-col gap-2 text-sm text-gray-600">
-              {uniqueAges.map((ageLabel) => (
-                <label key={ageLabel} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 accent-gray-600"
-                    value={ageLabel}
-                    onChange={() => toggleFilter("ageFilter", ageLabel)}
-                    checked={filters.ageFilter.includes(ageLabel)}
-                  />
-                  {getDisplayAge(ageLabel)} (
-                  {
-                    allProducts.filter(
-                      (item) =>
-                        item.variants &&
-                        item.variants.some(
-                          (v) =>
-                            v.age && `${v.age} ${v.ageUnit}`.trim() === ageLabel
-                        )
-                    ).length
-                  }
-                  )
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+   
       {/* SIZE Filter */}
       <div>
         <div className="mb-4 flex justify-between items-center">
@@ -912,6 +913,15 @@ const sortProducts = (products) => {
                       Gender: {filter} &times;
                     </span>
                   ))}
+                      {filters.ageFilter.map((filter) => (
+                    <span
+                      key={`age-${filter}`}
+                      className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm cursor-pointer"
+                      onClick={() => removeFilter("ageFilter", filter)}
+                    >
+                      Age: {filter} &times;
+                    </span>
+                  ))}
                   {filters.categoryFilter.map((filter) => (
                     <span
                       key={`category-${filter}`}
@@ -930,15 +940,7 @@ const sortProducts = (products) => {
                       Brand: {filter} &times;
                     </span>
                   ))} */}
-                  {filters.ageFilter.map((filter) => (
-                    <span
-                      key={`age-${filter}`}
-                      className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md text-sm cursor-pointer"
-                      onClick={() => removeFilter("ageFilter", filter)}
-                    >
-                      Age: {filter} &times;
-                    </span>
-                  ))}
+              
                   {filters.sizeFilter.map((filter) => (
                     <span
                       key={`size-${filter}`}
