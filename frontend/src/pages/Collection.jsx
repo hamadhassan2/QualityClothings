@@ -89,7 +89,7 @@ const Collection = () => {
     priceRangeFilter: [],
     priceInput: { min: "", max: "" },
     discountFilter: [],
-    sortType: "relevant",
+    sortType: "latest",
     search: "",
   };
   const [filters, setFilters] = useState(() => {
@@ -413,24 +413,27 @@ const Collection = () => {
     const outOfStockProducts = filtered.filter((p) => p.count === 0);
 
     // Apply sorting based on the selected sortType
-    const sortProducts = (products) => {
-      switch (filters.sortType) {
-        case "low-high":
-          return [...products].sort(
-            (a, b) =>
-              (a.discountedPrice || a.price) - (b.discountedPrice || b.price)
-          );
-        case "high-low":
-          return [...products].sort(
-            (a, b) =>
-              (b.discountedPrice || b.price) - (a.discountedPrice || a.price)
-          );
-        case "relevant":
-        default:
-          // For relevant, keep the existing order
-          return products;
-      }
-    };
+const sortProducts = (products) => {
+  switch (filters.sortType) {
+    case "low-high":
+      return [...products].sort(
+        (a, b) =>
+          (a.discountedPrice || a.price) - (b.discountedPrice || b.price)
+      );
+    case "high-low":
+      return [...products].sort(
+        (a, b) =>
+          (b.discountedPrice || b.price) - (a.discountedPrice || a.price)
+      );
+    case "latest":
+    default:
+      // New: most-recently added first
+      return [...products].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+  }
+};
+
 
     // Apply sorting to each group
     const sortedBestSellers = sortProducts(bestSellers);
@@ -862,12 +865,10 @@ const Collection = () => {
             Filters
           </button>
           <select
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, sortType: e.target.value }))
-            }
+           onChange={e => setFilters(prev => ({ ...prev, sortType: e.target.value }))}
             className="border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
-            <option value="relevant">Sort by: Relevant</option>
+            <option value="latest">Sort by: Latest</option>
             <option value="low-high">Sort by: Low to High</option>
             <option value="high-low">Sort by: High to Low</option>
           </select>
@@ -882,12 +883,10 @@ const Collection = () => {
             <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between mb-3 sticky top-[124px] z-40 bg-white py-2 bg-white">
               <Title text1="ALL" text2="COLLECTIONS" />
               <select
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, sortType: e.target.value }))
-                }
+               onChange={e => setFilters(prev => ({ ...prev, sortType: e.target.value }))}
                 className="mt-4 sm:mt-0 border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
-                <option value="relevant">Sort by: Relevant</option>
+                <option value="latest">Sort by: Latest</option>
                 <option value="low-high">Sort by: Low to High</option>
                 <option value="high-low">Sort by: High to Low</option>
               </select>
