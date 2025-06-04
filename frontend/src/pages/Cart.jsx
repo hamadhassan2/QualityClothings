@@ -238,7 +238,7 @@ const Cart = () => {
                         {item.productName}
                         {isUnavailable && (
                           <span className="ml-2 text-red-600 font-semibold">
-                            ⚠ Item not available
+                            ⚠ Item not available. Modify the cart to proceed
                           </span>
                         )}
                       </p>
