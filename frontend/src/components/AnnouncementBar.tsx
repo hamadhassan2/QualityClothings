@@ -1,9 +1,11 @@
 import React from "react";
 
 const AnnouncementBar = () => {
-  /* ✨  the message you want to repeat  */
-  const text = "🚚  FREE SHIPPING ON ORDERS ₹1000 & ABOVE   •  SHOP NOW  •  HURRY!";
-  /* duplicate the string so it fills >100 % width (smooth loop) */
+  /* ✨ the message you want to repeat */
+  const text =
+    "⚡ Hurry! 💥 Promotional Offer Ends Soon ⏳   •  🚚 FREE SHIPPING ON ORDERS ₹1000 & ABOVE   •  SHOP NOW   •  ";
+
+  /* duplicate the string so it fills >100% width (smooth loop) */
   const doubled = `${text}${text}${text}${text}${text}${text}
   ${text}${text}${text}${text}${text}${text}${text}${text}${text}
   ${text}${text}${text}${text}${text}${text}${text}${text}${text}${text}${text}${text}
@@ -25,7 +27,7 @@ const AnnouncementBar = () => {
           text-white font-semibold tracking-wide
           shadow-md select-none overflow-hidden
         "
-        style={{ height: "42px" }}            /* keeps height consistent */
+        style={{ height: "42px" }} /* keeps height consistent */
       >
         <div className="whitespace-nowrap ticker-animate leading-[42px] ml-16 mr-16">
           {doubled}

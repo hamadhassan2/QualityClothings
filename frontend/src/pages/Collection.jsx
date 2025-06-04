@@ -89,7 +89,7 @@ const Collection = () => {
     priceRangeFilter: [],
     priceInput: { min: "", max: "" },
     discountFilter: [],
-    sortType: "latest",
+    sortType: "low-high",
     search: "",
   };
   const [filters, setFilters] = useState(() => {
@@ -135,7 +135,37 @@ const Collection = () => {
   useEffect(() => {
     fetchAllProducts();
   }, []);
+ // Replace your existing handleGenderToggle with this:
+const handleGenderToggle = (g) => {
+  setFilters((prev) => {
+    const currentlyHas = prev.genderFilter.includes(g);
+    // 1) add or remove the clicked category
+    let newList = currentlyHas
+      ? prev.genderFilter.filter((x) => x !== g)
+      : [...prev.genderFilter, g];
 
+    // 2) if we just checked “Boys” or “Girls”, ensure “Unisex” is in the list
+    if (!currentlyHas && (g === "Boys" || g === "Girls")) {
+      if (!newList.includes("Unisex")) {
+        newList.push("Unisex");
+      }
+    }
+
+    // 3) if we just unchecked “Boys” or “Girls” and neither remains, remove “Unisex”
+    if (currentlyHas && (g === "Boys" || g === "Girls")) {
+      const stillHasBoys = newList.includes("Boys");
+      const stillHasGirls = newList.includes("Girls");
+      if (!stillHasBoys && !stillHasGirls) {
+        newList = newList.filter((x) => x !== "Unisex");
+      }
+    }
+
+    return { ...prev, genderFilter: newList };
+  });
+};
+
+ 
+  
   // Remove loader animation.
   useEffect(() => {
     const timer = setTimeout(() => setShowAnimation(false), 1500)
@@ -150,7 +180,7 @@ const Collection = () => {
   )
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b));
-
+    
   const uniqueCategories = Array.from(
     new Set(allProducts.map((item) => item.subCategory))
   )
@@ -472,17 +502,18 @@ const sortProducts = (products) => {
           <div className="mt-2 p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
             <div className="flex flex-col gap-2 text-sm text-gray-600">
               {uniqueGenders.map((g) => (
-                <label key={g} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 accent-gray-600"
-                    value={g}
-                    onChange={() => toggleFilter("genderFilter", g)}
-                    checked={filters.genderFilter.includes(g)}
-                  />
-                  {g} (
-                  {allProducts.filter((item) => item.category === g).length})
-                </label>
+               <label key={g} className="flex items-center gap-2">
+               <input
+                 type="checkbox"
+                 className="w-4 h-4 accent-gray-600"
+                 value={g}
+                 onChange={() => handleGenderToggle(g)}
+                 checked={filters.genderFilter.includes(g)}
+               />
+               {g} (
+               {allProducts.filter((item) => item.category === g).length})
+             </label>
+             
               ))}
             </div>
           </div>
@@ -561,12 +592,7 @@ const sortProducts = (products) => {
                     onChange={() => toggleFilter("categoryFilter", cat)}
                     checked={filters.categoryFilter.includes(cat)}
                   />
-                  {cat} (
-                  {
-                    allProducts.filter((item) => item.subCategory === cat)
-                      .length
-                  }
-                  )
+                 {cat.toUpperCase()} ({allProducts.filter(item => item.subCategory === cat).length})
                 </label>
               ))}
             </div>
@@ -866,7 +892,8 @@ const sortProducts = (products) => {
             Filters
           </button>
           <select
-           onChange={e => setFilters(prev => ({ ...prev, sortType: e.target.value }))}
+            value={filters.sortType}
+            onChange={e => setFilters(prev => ({ ...prev, sortType: e.target.value }))}
             className="border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             <option value="latest">Sort by: Latest</option>
@@ -884,7 +911,8 @@ const sortProducts = (products) => {
             <div className="hidden sm:flex flex-col sm:flex-row items-center justify-between mb-3 sticky top-[124px] z-40 bg-white py-2 bg-white">
               <Title text1="ALL" text2="COLLECTIONS" />
               <select
-               onChange={e => setFilters(prev => ({ ...prev, sortType: e.target.value }))}
+                value={filters.sortType}
+                onChange={e => setFilters(prev => ({ ...prev, sortType: e.target.value }))}
                 className="mt-4 sm:mt-0 border border-gray-300 text-sm px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="latest">Sort by: Latest</option>
