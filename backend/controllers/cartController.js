@@ -94,6 +94,8 @@ const getUserCart = async (req, res) => {
       if (!product) {
         // If product not found, treat as unavailable with zero stock
         unavailable.push({
+          productId,               // <— include productId
+          variantId,               // <— include variantId
           productName: "Unknown Product",
           requested: requestedQty,
           available: 0,
@@ -103,8 +105,11 @@ const getUserCart = async (req, res) => {
 
       const variant = product.variants.find((v) => v._id.toString() === variantId);
       const availableQty = variant?.quantity ?? 0;
+
       if (!variant || availableQty < requestedQty) {
         unavailable.push({
+          productId,               // <— include productId
+          variantId,               // <— include variantId
           productName: product.name,
           requested: requestedQty,
           available: availableQty,
@@ -122,5 +127,6 @@ const getUserCart = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 export { addToCart, updateCart, getUserCart, checkAvailability };
