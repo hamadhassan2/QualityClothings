@@ -82,26 +82,31 @@ const Cart = () => {
   // merging any previous server errors that still apply.
   useEffect(() => {
     // Keep only server errors that still apply:
-    const stillInvalidByName = unavailableItems.filter((u) => {
-      const match = cartData.find((cd) => cd.productName === u.name);
+    const stillInvalidByKey = unavailableItems.filter(u => {
+      const match = cartData.find(
+        cd => cd._id === u.productId && cd.variantKey === u.variantId
+      );
       return match && match.quantity > match.availableQty;
     });
-
-    // Front‐end invalids (quantity > availableQty in local state)
     const frontendInvalids = cartData
-      .filter((item) => item.quantity > item.availableQty)
-      .map((item) => ({
+      .filter(item => item.quantity > item.availableQty)
+      .map(item => ({
+        productId: item._id,
+        variantId: item.variantKey,
         name: item.productName,
         requested: item.quantity,
         available: item.availableQty,
       }));
-
-    // Merge & dedupe by name
     const merged = [
-      ...stillInvalidByName,
-      ...frontendInvalids.filter((fi) => !stillInvalidByName.some((si) => si.name === fi.name)),
+      ...stillInvalidByKey,
+      ...frontendInvalids.filter(
+        fi => !stillInvalidByKey.some(
+          si => si.productId === fi.productId && si.variantId === fi.variantId
+        )
+      ),
     ];
     setUnavailableItems(merged);
+    
   }, [cartData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle quantity changes (ignore invalid changes)
@@ -147,23 +152,29 @@ const Cart = () => {
         // Server says some are unavailable
         const serverUnavailable = response.data.unavailable || [];
         // Map into our { name, requested, available } form:
-        const mapped = serverUnavailable.map((it) => ({
-          name: it.productName,     // ensure your backend returns productName
-          requested: it.requested,
-          available: it.available,
-        }));
+       // EXPECT backend to return { productId, variantId, productName, requested, available }
+const mapped = serverUnavailable.map(it => ({
+  productId: it.productId,
+  variantId: it.variantId,
+  name: it.productName,
+  requested: it.requested,
+  available: it.available,
+}));
 
-        // 1) Update local cartData.availableQty for each matching itemName:
-        const updatedCartData = cartData.map((item) => {
-          const serverEntry = mapped.find((u) => u.name === item.productName);
-          if (serverEntry) {
-            return {
-              ...item,
-              availableQty: serverEntry.available, // override with server’s available
-            };
-          }
-          return item;
-        });
+
+const updatedCartData = cartData.map((item) => {
+  const serverEntry = mapped.find(
+    u => u.productId === item._id && u.variantId === item.variantKey
+  );
+  if (serverEntry) {
+    return {
+      ...item,
+      availableQty: serverEntry.available,
+    };
+  }
+  return item;
+});
+
         setCartData(updatedCartData);
 
         // 2) Overwrite unavailableItems so render shows the warning & disables button
@@ -213,9 +224,13 @@ const Cart = () => {
           {cartData.length > 0 ? (
             cartData.map((item, index) => {
               // Mark as unavailable if either frontend or server flagged it:
+              const serverError = unavailableItems.find(
+                u => u.productId === item._id && u.variantId === item.variantKey
+              );
               const isUnavailable =
                 item.quantity > item.availableQty ||
-                unavailableItems.some((u) => u.name === item.productName);
+                (serverError && serverError.requested > serverError.available);
+              
 
               return (
                 <div
@@ -238,7 +253,7 @@ const Cart = () => {
                         {item.productName}
                         {isUnavailable && (
                           <span className="ml-2 text-red-600 font-semibold">
-                            ⚠ Item not available
+                            ⚠ Item not available. Modify the cart to proceed
                           </span>
                         )}
                       </p>
