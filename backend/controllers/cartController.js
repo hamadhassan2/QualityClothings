@@ -79,6 +79,48 @@ const getUserCart = async (req, res) => {
     console.log(error);
     res.json({ success: false, message: error.message });
   }
+};const checkAvailability = async (req, res) => {
+  try {
+    // Expect body: { items: [ { productId, variantId, requestedQty }, ... ] }
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ success: false, message: "Invalid payload" });
+    }
+
+    const unavailable = [];
+
+    for (const { productId, variantId, requestedQty } of items) {
+      const product = await productModel.findById(productId);
+      if (!product) {
+        // If product not found, treat as unavailable with zero stock
+        unavailable.push({
+          productName: "Unknown Product",
+          requested: requestedQty,
+          available: 0,
+        });
+        continue;
+      }
+
+      const variant = product.variants.find((v) => v._id.toString() === variantId);
+      const availableQty = variant?.quantity ?? 0;
+      if (!variant || availableQty < requestedQty) {
+        unavailable.push({
+          productName: product.name,
+          requested: requestedQty,
+          available: availableQty,
+        });
+      }
+    }
+
+    if (unavailable.length > 0) {
+      return res.json({ success: false, unavailable });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("checkAvailability error:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
 };
 
-export { addToCart, updateCart, getUserCart };
+export { addToCart, updateCart, getUserCart, checkAvailability };
